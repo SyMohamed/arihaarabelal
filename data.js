@@ -364,7 +364,7 @@ function renderAdminMembers(){
     h+='<div class="arow">';
     if(m.photo)h+='<img class="athumb" src="'+m.photo+'" onerror="this.style.display=\'none\'"/>';
     else h+='<div class="contrib-avatar-ph" style="width:38px;height:38px;margin-right:.7rem;font-size:.9rem;flex-shrink:0">'+m.name[0]+'</div>';
-    h+='<div style="flex:1"><div class="arow-name">'+m.name+'</div>';
+    h+='<div style="flex:1"><div class="arow-name">'+m.name+(m.username?' <span style="font-size:.7rem;color:#999">@'+m.username+'</span>':'')+'</div>';
     h+='<span class="mem-badge '+(m.status==="approved"?"approved":"pending")+'">'+m.status+'</span></div>';
     h+='<div>';
     if(m.status==="pending")h+='<button class="btn-sm approve" onclick="approveMember(\''+m.id+'\')">&#10003; OK</button>';
@@ -374,7 +374,7 @@ function renderAdminMembers(){
 }
 function openMemberForm(){
   _adminMemberPhoto="";
-  setVal("adm-mem-name","");setVal("adm-mem-password","");setVal("adm-mem-role","");
+  setVal("adm-mem-name","");setVal("adm-mem-username","");setVal("adm-mem-password","");setVal("adm-mem-role","");
   var prev=document.getElementById("adm-mem-photo-prev");if(prev)prev.style.display="none";
   openOv("ov-add-member");
 }
@@ -388,10 +388,14 @@ function handleAdminMemberPhoto(input){
 }
 function saveAdminMember(){
   var name=getVal("adm-mem-name");if(!name){alert("Nom requis.");return;}
+  var username=getVal("adm-mem-username");if(!username){alert("Nom d utilisateur requis.");return;}
   var pw=getVal("adm-mem-password");if(!pw){alert("Mot de passe requis.");return;}
   var members=getMembers();
-  for(var i=0;i<members.length;i++){if(members[i].name.toLowerCase()===name.toLowerCase()){alert("Ce nom existe deja.");return;}}
-  members.push({id:"mem_"+Date.now(),name:name,password:pw,role:getVal("adm-mem-role"),bio:"",photo:_adminMemberPhoto,status:"approved",joinDate:new Date().toLocaleDateString("fr-FR")});
+  for(var i=0;i<members.length;i++){
+    var mu=members[i].username?members[i].username.toLowerCase():members[i].name.toLowerCase();
+    if(mu===username.toLowerCase()){alert("Ce nom d utilisateur existe deja.");return;}
+  }
+  members.push({id:"mem_"+Date.now(),name:name,username:username,password:pw,role:getVal("adm-mem-role"),bio:"",photo:_adminMemberPhoto,status:"approved",joinDate:new Date().toLocaleDateString("fr-FR")});
   saveMembers(members);closeOv("ov-add-member");
   renderAdminMembers();if(typeof renderAllMembers==="function")renderAllMembers();
   if(typeof showToast==="function")showToast("Membre ajoute avec succes !");

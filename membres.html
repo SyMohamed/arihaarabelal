@@ -163,6 +163,27 @@
         <button onclick="memberLogout()" style="margin-left:auto;background:rgba(232,213,160,.1);border:1px solid rgba(232,213,160,.2);color:var(--cream);padding:.4rem 1rem;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:1px;font-family:Lato,sans-serif">Deconnexion</button>
       </div>
       <p style="font-family:Cormorant Garamond,serif;font-size:1rem;color:#777;text-align:center">Vous etes connecte(e) a votre espace membre Ari-Haara Emergent.</p>
+
+      <!-- Change Profile Photo -->
+      <div style="margin-top:1.5rem;padding:1.2rem;background:rgba(13,74,71,.05);border:1px solid rgba(13,74,71,.1);border-radius:2px">
+        <div style="font-family:Cinzel,serif;font-size:.85rem;letter-spacing:.1em;color:var(--teal-dark);margin-bottom:.8rem">Changer la photo de profil</div>
+        <label class="upload-btn" style="display:inline-block">&#128247; Choisir une nouvelle photo<input type="file" accept="image/*" style="display:none" onchange="handleProfilePhotoChange(this)"/></label>
+        <div id="profile-photo-preview" style="display:none;margin-top:.5rem"><img id="profile-photo-prev-img" src="" style="width:70px;height:70px;object-fit:cover;border-radius:50%;filter:grayscale(100%)"/></div>
+        <p class="ferr" id="profile-photo-err" style="display:none"></p>
+        <p class="fok" id="profile-photo-ok" style="display:none">Photo mise a jour avec succes !</p>
+        <button class="btn-p" id="profile-photo-save-btn" style="margin-top:.5rem;display:none" onclick="saveProfilePhoto()">Enregistrer la photo</button>
+      </div>
+
+      <!-- Change Password -->
+      <div style="margin-top:1rem;padding:1.2rem;background:rgba(13,74,71,.05);border:1px solid rgba(13,74,71,.1);border-radius:2px">
+        <div style="font-family:Cinzel,serif;font-size:.85rem;letter-spacing:.1em;color:var(--teal-dark);margin-bottom:.8rem">Changer le mot de passe</div>
+        <div class="fg"><label>Mot de passe actuel</label><input type="password" id="change-pw-current" placeholder="Votre mot de passe actuel"/></div>
+        <div class="fg"><label>Nouveau mot de passe</label><input type="password" id="change-pw-new" placeholder="Nouveau mot de passe"/></div>
+        <div class="fg"><label>Confirmer le nouveau mot de passe</label><input type="password" id="change-pw-confirm" placeholder="Confirmez le nouveau mot de passe"/></div>
+        <p class="ferr" id="change-pw-err" style="display:none"></p>
+        <p class="fok" id="change-pw-ok" style="display:none">Mot de passe modifie avec succes !</p>
+        <button class="btn-p" onclick="changePassword()" style="margin-top:.5rem">Modifier le mot de passe</button>
+      </div>
     </div>
     <div id="auth-forms">
       <h2 style="font-family:Cinzel,serif;font-size:1.5rem;color:var(--teal-dark);text-align:center;margin-bottom:.5rem">Espace Membres</h2>
@@ -171,7 +192,7 @@
         <div class="auth-box">
           <div class="auth-box-title">Se connecter</div>
           <div class="auth-box-sub">Deja membre ? Entrez vos identifiants pour acceder a votre espace.</div>
-          <div class="fg"><label>Nom d utilisateur</label><input type="text" id="signin-username" placeholder="Votre nom"/></div>
+          <div class="fg"><label>Nom d utilisateur</label><input type="text" id="signin-username" placeholder="Votre nom d utilisateur"/></div>
           <div class="fg"><label>Mot de passe</label><input type="password" id="signin-password" placeholder="Mot de passe"/></div>
           <p class="ferr" id="signin-err">Identifiants incorrects.</p>
           <button class="btn-p full" onclick="doMemberLogin()">Se connecter</button>
@@ -180,7 +201,9 @@
           <div class="auth-box-title">Nouveau membre</div>
           <div class="auth-box-sub">Rejoignez Ari-Haara Emergent. Votre demande sera examinee par l administrateur.</div>
           <div class="fg"><label>Nom complet</label><input type="text" id="signup-name" placeholder="Prenom Nom"/></div>
+          <div class="fg"><label>Nom d utilisateur</label><input type="text" id="signup-username" placeholder="Choisissez un nom d utilisateur"/></div>
           <div class="fg"><label>Mot de passe</label><input type="password" id="signup-password" placeholder="Choisissez un mot de passe"/></div>
+          <div class="fg"><label>Confirmer le mot de passe</label><input type="password" id="signup-password-confirm" placeholder="Confirmez votre mot de passe"/></div>
           <div class="fg"><label>Role / Profession</label><input type="text" id="signup-role" placeholder="ex: Eleveur, Enseignant..."/></div>
           <div class="fg">
             <label>Photo de profil (optionnel)</label>
@@ -277,6 +300,7 @@
     <div class="mhd"><h3>Ajouter un Membre</h3><button class="mclose" onclick="closeOv('ov-add-member')">&#215;</button></div>
     <div class="mbd">
       <div class="fg"><label>Nom complet</label><input type="text" id="adm-mem-name" placeholder="Prenom Nom"/></div>
+      <div class="fg"><label>Nom d utilisateur</label><input type="text" id="adm-mem-username" placeholder="Nom d utilisateur du membre"/></div>
       <div class="fg"><label>Mot de passe</label><input type="password" id="adm-mem-password" placeholder="Mot de passe du membre"/></div>
       <div class="fg"><label>Role / Profession</label><input type="text" id="adm-mem-role" placeholder="ex: Eleveur, Enseignant..."/></div>
       <div class="fg"><label>Photo (optionnel)</label>
@@ -391,17 +415,26 @@ function handleSignupPhoto(input){
 
 function doMemberSignup(){
   var name=document.getElementById("signup-name").value.trim();
+  var username=document.getElementById("signup-username").value.trim();
   var pass=document.getElementById("signup-password").value.trim();
+  var passConfirm=document.getElementById("signup-password-confirm").value.trim();
   var role=document.getElementById("signup-role").value.trim();
   var err=document.getElementById("signup-err");var ok=document.getElementById("signup-ok");
   err.style.display="none";ok.style.display="none";
-  if(!name||!pass){err.textContent="Nom et mot de passe requis.";err.style.display="block";return;}
+  if(!name||!username||!pass){err.textContent="Nom complet, nom d utilisateur et mot de passe requis.";err.style.display="block";return;}
+  if(pass!==passConfirm){err.textContent="Les mots de passe ne correspondent pas.";err.style.display="block";return;}
+  if(pass.length<4){err.textContent="Le mot de passe doit contenir au moins 4 caracteres.";err.style.display="block";return;}
   var members=getMembers();
-  for(var i=0;i<members.length;i++){if(members[i].name.toLowerCase()===name.toLowerCase()){err.textContent="Ce nom est deja utilise.";err.style.display="block";return;}}
-  members.push({id:"mem_"+Date.now(),name:name,password:pass,role:role||"Membre",bio:"",photo:_signupPhotoData,status:"pending",joinDate:new Date().toLocaleDateString("fr-FR")});
+  for(var i=0;i<members.length;i++){
+    if(members[i].username&&members[i].username.toLowerCase()===username.toLowerCase()){err.textContent="Ce nom d utilisateur est deja utilise.";err.style.display="block";return;}
+    if(!members[i].username&&members[i].name.toLowerCase()===username.toLowerCase()){err.textContent="Ce nom d utilisateur est deja utilise.";err.style.display="block";return;}
+  }
+  members.push({id:"mem_"+Date.now(),name:name,username:username,password:pass,role:role||"Membre",bio:"",photo:_signupPhotoData,status:"pending",joinDate:new Date().toLocaleDateString("fr-FR")});
   saveMembers(members);ok.style.display="block";
   document.getElementById("signup-name").value="";
+  document.getElementById("signup-username").value="";
   document.getElementById("signup-password").value="";
+  document.getElementById("signup-password-confirm").value="";
   document.getElementById("signup-role").value="";
   _signupPhotoData="";
   document.getElementById("signup-photo-wrap").style.display="none";
@@ -413,7 +446,10 @@ function doMemberLogin(){
   var err=document.getElementById("signin-err");err.style.display="none";
   var members=getMembers();var found=null;
   for(var i=0;i<members.length;i++){
-    if(members[i].name.toLowerCase()===username.toLowerCase()&&members[i].password===pass){found=members[i];break;}
+    var m=members[i];
+    var matchUser=m.username&&m.username.toLowerCase()===username.toLowerCase();
+    var matchName=!m.username&&m.name.toLowerCase()===username.toLowerCase();
+    if((matchUser||matchName)&&m.password===pass){found=m;break;}
   }
   if(!found){err.style.display="block";return;}
   if(found.status!=="approved"){err.textContent="Votre compte est en attente d approbation.";err.style.display="block";return;}
@@ -422,15 +458,76 @@ function doMemberLogin(){
 
 function memberLogout(){logout();showAuthForms();}
 
+var _newProfilePhotoData="";
+function handleProfilePhotoChange(input){
+  var file=input.files[0];if(!file)return;
+  var err=document.getElementById("profile-photo-err");
+  var ok=document.getElementById("profile-photo-ok");
+  if(err)err.style.display="none";if(ok)ok.style.display="none";
+  compressImage(file,250,250,0.4,function(data){
+    _newProfilePhotoData=data;
+    var prev=document.getElementById("profile-photo-prev-img");
+    var wrap=document.getElementById("profile-photo-preview");
+    var saveBtn=document.getElementById("profile-photo-save-btn");
+    if(prev){prev.src=data;wrap.style.display="block";}
+    if(saveBtn)saveBtn.style.display="inline-block";
+  });
+}
+function saveProfilePhoto(){
+  var m=curMember();if(!m)return;
+  var err=document.getElementById("profile-photo-err");
+  var ok=document.getElementById("profile-photo-ok");
+  if(err)err.style.display="none";if(ok)ok.style.display="none";
+  if(!_newProfilePhotoData){if(err){err.textContent="Veuillez choisir une photo.";err.style.display="block";}return;}
+  var members=getMembers();
+  for(var i=0;i<members.length;i++){
+    if(members[i].id===m.id){members[i].photo=_newProfilePhotoData;setCurMember(members[i]);showProfile(members[i]);break;}
+  }
+  saveMembers(members);
+  _newProfilePhotoData="";
+  document.getElementById("profile-photo-preview").style.display="none";
+  document.getElementById("profile-photo-save-btn").style.display="none";
+  if(ok)ok.style.display="block";
+  if(typeof renderAllMembers==="function")renderAllMembers();
+}
+
+function changePassword(){
+  var m=curMember();if(!m)return;
+  var curPw=document.getElementById("change-pw-current").value.trim();
+  var newPw=document.getElementById("change-pw-new").value.trim();
+  var confirmPw=document.getElementById("change-pw-confirm").value.trim();
+  var err=document.getElementById("change-pw-err");
+  var ok=document.getElementById("change-pw-ok");
+  err.style.display="none";ok.style.display="none";
+  if(!curPw||!newPw||!confirmPw){err.textContent="Tous les champs sont requis.";err.style.display="block";return;}
+  if(curPw!==m.password){err.textContent="Le mot de passe actuel est incorrect.";err.style.display="block";return;}
+  if(newPw!==confirmPw){err.textContent="Les nouveaux mots de passe ne correspondent pas.";err.style.display="block";return;}
+  if(newPw.length<4){err.textContent="Le nouveau mot de passe doit contenir au moins 4 caracteres.";err.style.display="block";return;}
+  var members=getMembers();
+  for(var i=0;i<members.length;i++){
+    if(members[i].id===m.id){members[i].password=newPw;setCurMember(members[i]);break;}
+  }
+  saveMembers(members);
+  document.getElementById("change-pw-current").value="";
+  document.getElementById("change-pw-new").value="";
+  document.getElementById("change-pw-confirm").value="";
+  ok.style.display="block";
+}
+
 function showProfile(m){
   document.getElementById("auth-forms").style.display="none";
   document.getElementById("profile-view").style.display="block";
   document.getElementById("profile-name-display").textContent=m.name;
-  document.getElementById("profile-role-display").textContent=m.role;
+  document.getElementById("profile-role-display").textContent=(m.username?"@"+m.username+" \u2022 ":"")+m.role;
   document.getElementById("profile-date-display").textContent="Membre depuis "+(m.joinDate||"N/A");
   var wrap=document.getElementById("profile-avatar-wrap");
   if(m.photo){wrap.innerHTML='<img src="'+m.photo+'" class="profile-avatar"/>';}
   else{wrap.innerHTML='<div class="profile-avatar-ph">'+ m.name[0] +'</div>';}
+  /* reset profile management sections */
+  var els=["profile-photo-err","profile-photo-ok","change-pw-err","change-pw-ok"];
+  for(var i=0;i<els.length;i++){var el=document.getElementById(els[i]);if(el)el.style.display="none";}
+  var pp=document.getElementById("profile-photo-preview");if(pp)pp.style.display="none";
+  var psb=document.getElementById("profile-photo-save-btn");if(psb)psb.style.display="none";
 }
 function showAuthForms(){
   document.getElementById("auth-forms").style.display="block";
