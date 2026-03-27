@@ -6,6 +6,8 @@
 /* ── FIRESTORE SETUP ── */
 var db=null;
 var _rtListeners=[];/* real-time listener unsubscribe functions */
+var _writeLocks={};/* prevent real-time overwrites during our own saves */
+var _localTimestamps={};/* track when we last wrote each key */
 var FS_MAP={
   "ah_founders":"founders","ah_members":"members","ah_acts":"activities",
   "ah_funds":"funds","ah_contribs":"contributions",
@@ -16,16 +18,31 @@ var FS_MAP={
 function fbSave(localKey,data){
   if(!db)return;
   var col=FS_MAP[localKey];if(!col)return;
-  db.collection(col).doc("data").set({items:data,ts:Date.now()})
-    .then(function(){console.log("Firestore saved:",col);})
-    .catch(function(e){console.error("Firestore save error:",col,e);});
+  /* Lock this key to ignore incoming snapshots from our own write */
+  _writeLocks[localKey]=true;
+  _localTimestamps[localKey]=Date.now();
+  var ts=_localTimestamps[localKey];
+  db.collection(col).doc("data").set({items:data,ts:ts})
+    .then(function(){
+      console.log("Firestore saved:",col);
+      /* Release lock after a short delay to let snapshot pass */
+      setTimeout(function(){_writeLocks[localKey]=false;},2000);
+    })
+    .catch(function(e){
+      console.error("Firestore save error:",col,e);
+      _writeLocks[localKey]=false;
+    });
 }
 
-function fbLoad(col,callback){
+function fbLoad(col,localKey,callback){
   if(!db){callback(null);return;}
   db.collection(col).doc("data").get()
     .then(function(doc){
-      if(doc.exists&&doc.data()&&doc.data().items){callback(doc.data().items);}
+      if(doc.exists&&doc.data()&&doc.data().items){
+        /* Track the timestamp from initial load */
+        if(localKey&&doc.data().ts){_localTimestamps[localKey]=doc.data().ts;}
+        callback(doc.data().items);
+      }
       else{callback(null);}
     })
     .catch(function(e){console.warn("Firestore load error:",col,e);callback(null);});
@@ -49,7 +66,7 @@ function syncFromFirestore(){
   for(var i=0;i<keys.length;i++){
     (function(localKey){
       var col=FS_MAP[localKey];
-      fbLoad(col,function(data){
+      fbLoad(col,localKey,function(data){
         if(data!==null){
           try{localStorage.setItem(localKey,JSON.stringify(data));}catch(e){}
           gotAny=true;
@@ -119,11 +136,23 @@ function startRealtimeListeners(){
     (function(localKey){
       var col=FS_MAP[localKey];
       var unsub=db.collection(col).doc("data").onSnapshot(function(doc){
-        if(doc.exists&&doc.data()&&doc.data().items){
-          try{localStorage.setItem(localKey,JSON.stringify(doc.data().items));}catch(e){}
-          _refreshAllViews();
-          console.log("Real-time update:",col);
+        if(!doc.exists||!doc.data()||!doc.data().items)return;
+        /* Skip if we just wrote this key (our own echo) */
+        if(_writeLocks[localKey]){
+          console.log("Skipping echo for:",col);
+          return;
         }
+        /* Only accept if remote timestamp is newer than our last write */
+        var remoteTs=doc.data().ts||0;
+        var localTs=_localTimestamps[localKey]||0;
+        if(remoteTs<=localTs){
+          console.log("Skipping stale snapshot for:",col,"remote:",remoteTs,"local:",localTs);
+          return;
+        }
+        try{localStorage.setItem(localKey,JSON.stringify(doc.data().items));}catch(e){}
+        _localTimestamps[localKey]=remoteTs;
+        _refreshAllViews();
+        console.log("Real-time update applied:",col,"ts:",remoteTs);
       },function(err){
         console.warn("Real-time listener error:",col,err);
       });
