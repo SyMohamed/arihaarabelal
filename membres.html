@@ -41,34 +41,35 @@
 .founder-card:hover .founder-bio-overlay{opacity:1;}
 .founder-bio-text{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:.9rem;color:rgba(232,213,160,.85);text-align:center;line-height:1.6;}
 
-/* ── MEMBERS GRID ── */
-.members-section{background:var(--off,#f5f0e8);padding:4rem 0;}
+/* ── MEMBERS MARQUEE ── */
+.members-section{background:var(--off,#f5f0e8);padding:4rem 0;overflow:hidden;}
 .members-wrap{max-width:1100px;margin:0 auto;padding:0 2rem;}
 .members-header{margin-bottom:2.5rem;text-align:center;}
-.members-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-  gap:1.8rem;
-}
-@media(max-width:600px){.members-grid{grid-template-columns:repeat(2,1fr);gap:1rem;}}
+.members-marquee-outer{position:relative;overflow:hidden;padding:1rem 0;}
+.members-marquee-outer::before,.members-marquee-outer::after{
+  content:"";position:absolute;top:0;bottom:0;width:100px;z-index:2;pointer-events:none;}
+.members-marquee-outer::before{left:0;background:linear-gradient(to right,var(--off,#f5f0e8),transparent);}
+.members-marquee-outer::after{right:0;background:linear-gradient(to left,var(--off,#f5f0e8),transparent);}
+.members-marquee-row{display:flex;gap:1.5rem;width:max-content;padding:.5rem 0;}
+.members-marquee-row.row-1{animation:marqueeLeft 35s linear infinite;}
+.members-marquee-row.row-2{animation:marqueeRight 40s linear infinite;margin-top:1.5rem;}
+.members-marquee-row:hover{animation-play-state:paused;}
+@keyframes marqueeLeft{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+@keyframes marqueeRight{0%{transform:translateX(-50%);}100%{transform:translateX(0);}}
 
-/* Card entrance animation */
-@keyframes memberFadeIn{
-  from{opacity:0;transform:translateY(30px) scale(.95);}
-  to{opacity:1;transform:translateY(0) scale(1);}
-}
 .member-card{
+  width:190px;flex-shrink:0;
   background:var(--white);border-radius:8px;overflow:hidden;
   box-shadow:0 4px 20px rgba(13,74,71,.07);
   transition:transform .4s cubic-bezier(.25,.46,.45,.94),box-shadow .4s,border-color .4s;
   text-align:center;position:relative;
   border:1px solid transparent;
-  animation:memberFadeIn .6s ease both;
 }
 .member-card:hover{
-  transform:translateY(-8px) scale(1.02);
-  box-shadow:0 16px 40px rgba(13,74,71,.15);
+  transform:translateY(-8px) scale(1.04);
+  box-shadow:0 16px 40px rgba(13,74,71,.18);
   border-color:rgba(201,168,76,.3);
+  z-index:5;
 }
 /* Photo section */
 .member-card-photo{width:100%;aspect-ratio:1;overflow:hidden;position:relative;
@@ -88,17 +89,17 @@
   transition:all .5s;}
 .member-card:hover .member-card-no-photo{color:rgba(232,213,160,.35);}
 /* Info section */
-.member-card-info{padding:1rem .8rem .8rem;position:relative;}
-.member-card-name{font-family:"Cinzel",serif;font-size:.82rem;color:var(--teal-dark);margin-bottom:.25rem;
+.member-card-info{padding:.8rem .7rem .7rem;position:relative;}
+.member-card-name{font-family:"Cinzel",serif;font-size:.78rem;color:var(--teal-dark);margin-bottom:.2rem;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .3s;}
 .member-card:hover .member-card-name{color:var(--teal);}
-.member-card-role{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.2rem;
+.member-card-role{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.15rem;
   transition:letter-spacing .4s;}
 .member-card:hover .member-card-role{letter-spacing:.18em;}
-.member-card-date{font-size:.58rem;color:#bbb;letter-spacing:.05em;}
+.member-card-date{font-size:.55rem;color:#bbb;letter-spacing:.05em;}
 /* Status dot */
 .member-card-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);
-  position:absolute;top:12px;right:12px;box-shadow:0 0 0 3px rgba(13,74,71,.15);
+  position:absolute;top:10px;right:10px;z-index:3;box-shadow:0 0 0 3px rgba(13,74,71,.15);
   animation:dotPulse 2s infinite;}
 @keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(13,74,71,.15);}50%{box-shadow:0 0 0 6px rgba(13,74,71,.05);}}
 /* Empty & count */
@@ -168,7 +169,10 @@
       <p style="font-family:Cormorant Garamond,serif;font-size:1rem;color:#888;margin-top:.4rem">La famille grandissante d Ari-Haara Emergent</p>
       <div class="members-count" id="members-count"></div>
     </div>
-    <div class="members-grid" id="members-grid"></div>
+    <div class="members-marquee-outer" id="members-marquee-outer">
+      <div class="members-marquee-row row-1" id="members-row-1"></div>
+      <div class="members-marquee-row row-2" id="members-row-2"></div>
+    </div>
     <div id="members-empty" class="members-empty" style="display:none">Aucun membre approuve pour le moment.</div>
   </div>
 </section>
@@ -389,38 +393,67 @@ function renderFounders(){
   el.innerHTML=h;
 }
 
-/* ── MEMBERS CAROUSEL ── */
+/* ── MEMBERS MARQUEE ── */
+function _makeCard(m){
+  var ph=m.photo
+    ?'<div class="member-card-photo"><img src="'+m.photo+'" alt="'+m.name+'" loading="lazy"/></div>'
+    :'<div class="member-card-no-photo">'+m.name[0].toUpperCase()+'</div>';
+  var c='<div class="member-card">';
+  c+='<div class="member-card-dot"></div>';
+  c+=ph+'<div class="member-card-info">';
+  c+='<div class="member-card-name" title="'+m.name+'">'+m.name+'</div>';
+  c+='<div class="member-card-role">'+m.role+'</div>';
+  if(m.joinDate)c+='<div class="member-card-date">Depuis '+m.joinDate+'</div>';
+  c+='</div></div>';
+  return c;
+}
 function renderAllMembers(){
-  var members=getMembers().filter(function(m){return m.status==="approved";});
-  var grid=document.getElementById("members-grid");
+  /* Filter: approved AND not a founder (founders already shown above) */
+  var founders=getFounders();
+  var founderIds={};
+  for(var fi=0;fi<founders.length;fi++){founderIds[founders[fi].id]=true;}
+  var members=getMembers().filter(function(m){
+    return m.status==="approved"&&!m.founderId;
+  });
+  var row1=document.getElementById("members-row-1");
+  var row2=document.getElementById("members-row-2");
+  var outer=document.getElementById("members-marquee-outer");
   var empty=document.getElementById("members-empty");
   var countEl=document.getElementById("members-count");
 
   if(!members.length){
-    if(grid)grid.innerHTML="";
+    if(row1)row1.innerHTML="";if(row2)row2.innerHTML="";
+    if(outer)outer.style.display="none";
     if(empty)empty.style.display="block";
     if(countEl)countEl.textContent="";
     return;
   }
   if(empty)empty.style.display="none";
+  if(outer)outer.style.display="block";
   if(countEl)countEl.textContent=members.length+" membre"+(members.length>1?"s":"")+" actif"+(members.length>1?"s":"");
 
-  var cards="";
-  for(var i=0;i<members.length;i++){
-    var m=members[i];
-    var delay=Math.min(i*0.08,1.2);/* staggered entrance, max 1.2s */
-    var ph=m.photo
-      ?'<div class="member-card-photo"><img src="'+m.photo+'" alt="'+m.name+'" loading="lazy"/></div>'
-      :'<div class="member-card-no-photo">'+m.name[0].toUpperCase()+'</div>';
-    cards+='<div class="member-card" style="animation-delay:'+delay+'s">';
-    cards+='<div class="member-card-dot"></div>';
-    cards+=ph+'<div class="member-card-info">';
-    cards+='<div class="member-card-name" title="'+m.name+'">'+m.name+'</div>';
-    cards+='<div class="member-card-role">'+m.role+'</div>';
-    if(m.joinDate)cards+='<div class="member-card-date">Depuis '+m.joinDate+'</div>';
-    cards+='</div></div>';
-  }
-  if(grid)grid.innerHTML=cards;
+  /* Split members into two rows */
+  var half=Math.ceil(members.length/2);
+  var group1=members.slice(0,half);
+  var group2=members.slice(half);
+  /* If only one group, duplicate for seamless loop */
+  if(!group2.length)group2=group1.slice();
+
+  /* Build row 1 (scrolls left) - duplicate for seamless loop */
+  var h1="";
+  for(var i=0;i<group1.length;i++)h1+=_makeCard(group1[i]);
+  if(row1)row1.innerHTML=h1+h1;
+
+  /* Build row 2 (scrolls right) - duplicate for seamless loop */
+  var h2="";
+  for(var j=0;j<group2.length;j++)h2+=_makeCard(group2[j]);
+  if(row2)row2.innerHTML=h2+h2;
+
+  /* Adjust speed based on card count */
+  var speed1=Math.max(20,group1.length*6);
+  var speed2=Math.max(25,group2.length*7);
+  if(row1)row1.style.animationDuration=speed1+"s";
+  if(row2)row2.style.animationDuration=speed2+"s";
 }
 
 /* ── AUTH ── */
