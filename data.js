@@ -5,10 +5,12 @@
 
 /* ── FIRESTORE SETUP ── */
 var db=null;
+var _rtListeners=[];/* real-time listener unsubscribe functions */
 var FS_MAP={
   "ah_founders":"founders","ah_members":"members","ah_acts":"activities",
   "ah_funds":"funds","ah_contribs":"contributions",
-  "ah_slides_rm":"slides_removed","ah_slides_ex":"slides_extra"
+  "ah_slides_rm":"slides_removed","ah_slides_ex":"slides_extra",
+  "ah_wallets":"wallets"
 };
 
 function fbSave(localKey,data){
@@ -55,15 +57,7 @@ function syncFromFirestore(){
         loaded++;
         if(loaded===keys.length){
           if(gotAny){
-            if(typeof renderFunds==="function")renderFunds();
-            if(typeof renderActs==="function")renderActs();
-            if(typeof renderAllMembers==="function")renderAllMembers();
-            if(typeof renderFounders==="function")renderFounders();
-            if(typeof renderMyContribs==="function")renderMyContribs();
-            if(typeof renderAllContribs==="function")renderAllContribs();
-            if(typeof updateTotal==="function")updateTotal();
-            if(typeof renderMembershipTrackers==="function")renderMembershipTrackers();
-            if(typeof buildSlides==="function")buildSlides();
+            _refreshAllViews();
             console.log("Firestore sync complete");
           } else {
             console.log("Firestore empty - pushing local data up");
@@ -75,6 +69,46 @@ function syncFromFirestore(){
   }
 }
 
+/* Refresh all views after data changes */
+function _refreshAllViews(){
+  if(typeof renderFunds==="function")renderFunds();
+  if(typeof renderActs==="function")renderActs();
+  if(typeof renderAllMembers==="function")renderAllMembers();
+  if(typeof renderFounders==="function")renderFounders();
+  if(typeof renderMyContribs==="function")renderMyContribs();
+  if(typeof renderAllContribs==="function")renderAllContribs();
+  if(typeof updateTotal==="function")updateTotal();
+  if(typeof renderMembershipTrackers==="function")renderMembershipTrackers();
+  if(typeof buildSlides==="function")buildSlides();
+  if(typeof renderDonationSection==="function")renderDonationSection();
+  if(typeof renderMemberBar==="function")renderMemberBar();
+}
+
+/* Real-time Firestore listeners */
+function startRealtimeListeners(){
+  if(!db)return;
+  /* clean up any existing listeners */
+  for(var i=0;i<_rtListeners.length;i++){try{_rtListeners[i]();}catch(e){}}
+  _rtListeners=[];
+  var keys=Object.keys(FS_MAP);
+  for(var i=0;i<keys.length;i++){
+    (function(localKey){
+      var col=FS_MAP[localKey];
+      var unsub=db.collection(col).doc("data").onSnapshot(function(doc){
+        if(doc.exists&&doc.data()&&doc.data().items){
+          try{localStorage.setItem(localKey,JSON.stringify(doc.data().items));}catch(e){}
+          _refreshAllViews();
+          console.log("Real-time update:",col);
+        }
+      },function(err){
+        console.warn("Real-time listener error:",col,err);
+      });
+      _rtListeners.push(unsub);
+    })(keys[i]);
+  }
+  console.log("Real-time listeners active for",keys.length,"collections");
+}
+
 window.addEventListener("load",function(){
   setTimeout(function(){
     try{
@@ -82,6 +116,8 @@ window.addEventListener("load",function(){
         db=firebase.firestore();
         console.log("Firestore connected!");
         syncFromFirestore();
+        /* Start real-time listeners after initial sync */
+        setTimeout(function(){startRealtimeListeners();},2000);
       } else {
         console.warn("Firebase SDK not loaded yet");
       }
@@ -147,6 +183,8 @@ function getFunds(){return ahLoad("ah_funds",[]);}
 function saveFunds(v){var r=ahSave("ah_funds",v);fbSave("ah_funds",v);return r;}
 function getContribs(){return ahLoad("ah_contribs",[]);}
 function saveContribs(v){ahSave("ah_contribs",v);fbSave("ah_contribs",v);}
+function getWallets(){return ahLoad("ah_wallets",[]);}
+function saveWallets(v){ahSave("ah_wallets",v);fbSave("ah_wallets",v);}
 function getSlidesRemoved(){return ahLoad("ah_slides_rm",[]);}
 function getSlidesExtra(){return ahLoad("ah_slides_ex",[]);}
 function saveSlidesRemoved(v){ahSave("ah_slides_rm",v);fbSave("ah_slides_rm",v);}
@@ -589,6 +627,53 @@ function deleteFund(id){
   renderAdminFunds();if(typeof renderFunds==="function")renderFunds();
 }
 
+/* ── WALLET ADMIN (Mobile Money for Donations) ───────── */
+var _walletIconData="";
+function renderAdminWallets(){
+  var el=document.getElementById("wallets-alist");if(!el)return;
+  var wallets=getWallets();
+  if(!wallets.length){el.innerHTML='<div style="padding:1rem;text-align:center;color:#ccc;font-size:.82rem">Aucun portefeuille mobile configure</div>';return;}
+  var h="";
+  for(var i=0;i<wallets.length;i++){
+    var w=wallets[i];
+    h+='<div class="arow">';
+    if(w.icon)h+='<img class="athumb" src="'+w.icon+'" style="width:32px;height:32px;border-radius:6px;object-fit:contain;margin-right:.5rem"/>';
+    h+='<div style="flex:1"><div class="arow-name">'+w.name+'</div>';
+    h+='<div class="arow-sub">'+w.phone+'</div></div>';
+    h+='<button class="btn-sm del" onclick="deleteWallet(\''+w.id+'\')">Suppr.</button></div>';
+  }
+  el.innerHTML=h;
+}
+function openWalletForm(){
+  _walletIconData="";
+  setVal("wallet-name","");setVal("wallet-phone","");
+  var prev=document.getElementById("wallet-icon-prev");if(prev)prev.style.display="none";
+  openOv("ov-add-wallet");
+}
+function handleWalletIcon(input){
+  var file=input.files[0];if(!file)return;
+  compressImage(file,100,100,0.6,function(data){
+    _walletIconData=data;
+    var prev=document.getElementById("wallet-icon-prev");
+    if(prev){prev.src=data;prev.style.display="block";}
+  });
+}
+function saveWallet(){
+  var name=getVal("wallet-name");if(!name){alert("Nom de l application requis.");return;}
+  var phone=getVal("wallet-phone");if(!phone){alert("Numero requis.");return;}
+  var wallets=getWallets();
+  wallets.push({id:"w_"+Date.now(),name:name,phone:phone,icon:_walletIconData});
+  saveWallets(wallets);closeOv("ov-add-wallet");
+  renderAdminWallets();if(typeof renderDonationSection==="function")renderDonationSection();
+  if(typeof showToast==="function")showToast("Portefeuille ajoute !");
+}
+function deleteWallet(id){
+  if(!_isAdmin){alert("Seul l administrateur peut supprimer.");return;}
+  if(!confirm("Supprimer ce portefeuille?"))return;
+  saveWallets(getWallets().filter(function(w){return w.id!==id;}));
+  renderAdminWallets();if(typeof renderDonationSection==="function")renderDonationSection();
+}
+
 /* ── CONTRIBUTIONS ADMIN ──────────────────────────────── */
 function renderAdminContribs(){
   var el=document.getElementById("contribs-alist");if(!el)return;
@@ -760,5 +845,6 @@ function openAdminPanel(){
   syncAllFoundersToMembers();
   renderAdminFounders();renderAdminMembers();renderActAlist();
   renderAdminFunds();renderAdminContribs();renderAdminSlides();
+  if(typeof renderAdminWallets==="function")renderAdminWallets();
   swTab(0);openOv("ov-admin");
 }
