@@ -229,14 +229,10 @@ function closeOv(id){document.getElementById(id).classList.remove("open");}
 window.addEventListener("scroll",function(){var n=document.getElementById("main-nav");if(n)n.classList.toggle("scrolled",window.scrollY>40);});
 window.addEventListener("click",function(e){if(e.target&&e.target.classList&&e.target.classList.contains("overlay"))e.target.classList.remove("open");});
 
-/* IMAGE COMPRESSION - resizes images to save localStorage space */
-var MAX_FILE_KB=250;
+/* IMAGE COMPRESSION - higher quality for Firebase storage */
+var MAX_FILE_KB=500;
 function compressImage(file,maxW,maxH,quality,cb){
-  maxW=maxW||400;maxH=maxH||400;quality=quality||0.4;
-  if(file.size>MAX_FILE_KB*1024){
-    /* file too large - compress it automatically */
-    quality=Math.min(quality,0.3);
-  }
+  maxW=maxW||600;maxH=maxH||600;quality=quality||0.7;
   var reader=new FileReader();
   reader.onload=function(e){
     var img=new Image();
@@ -251,9 +247,12 @@ function compressImage(file,maxW,maxH,quality,cb){
       var ctx=canvas.getContext("2d");
       ctx.drawImage(img,0,0,w,h);
       var result=canvas.toDataURL("image/jpeg",quality);
-      /* if still too large, reduce further */
+      /* if too large, step down quality */
       if(result.length>MAX_FILE_KB*1024){
-        result=canvas.toDataURL("image/jpeg",0.2);
+        result=canvas.toDataURL("image/jpeg",quality*0.6);
+      }
+      if(result.length>MAX_FILE_KB*1024){
+        result=canvas.toDataURL("image/jpeg",0.3);
       }
       cb(result);
     };
@@ -373,7 +372,7 @@ function openFounderForm(id){
 }
 function handleFounderPhoto(input){
   var file=input.files[0];if(!file)return;
-  compressImage(file,300,300,0.5,function(data){
+  compressImage(file,500,500,0.75,function(data){
     _founderPhotoData=data;
     var prev=document.getElementById("fn-photo-preview");var wrap=document.getElementById("fn-photo-preview-wrap");
     if(prev){prev.src=_founderPhotoData;if(wrap)wrap.style.display="block";}
@@ -465,7 +464,7 @@ function openMemberForm(){
 }
 function handleAdminMemberPhoto(input){
   var file=input.files[0];if(!file)return;
-  compressImage(file,250,250,0.4,function(data){
+  compressImage(file,500,500,0.75,function(data){
     _adminMemberPhoto=data;
     var prev=document.getElementById("adm-mem-photo-prev");
     if(prev){prev.src=data;prev.style.display="block";}
@@ -530,7 +529,7 @@ function handleActPhotos(input){
   var remaining=files.length;
   for(var i=0;i<files.length;i++){
     (function(file){
-      compressImage(file,600,600,0.4,function(data){
+      compressImage(file,900,900,0.7,function(data){
         _actPhotos.push(data);
         remaining--;
         if(remaining===0)renderActPhotosPreview();
@@ -607,7 +606,7 @@ function addSlideFiles(input){
   var remaining=files.length;
   for(var i=0;i<files.length;i++){
     (function(file){
-      compressImage(file,1000,600,0.5,function(data){
+      compressImage(file,1200,800,0.7,function(data){
         ex.push({id:"ex_"+Date.now()+"_"+Math.random().toString(36).substr(2,4),src:data});
         remaining--;
         if(remaining===0){
@@ -766,7 +765,7 @@ function handleProjPhotos(input){
   var toProcess=Math.min(files.length,10-_projPhotos.length);
   for(var i=0;i<toProcess;i++){
     (function(file){
-      compressImage(file,600,600,0.5,function(data){
+      compressImage(file,900,900,0.7,function(data){
         _projPhotos.push(data);_renderProjPhotoPreviews();
       });
     })(files[i]);

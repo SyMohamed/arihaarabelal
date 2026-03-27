@@ -443,7 +443,7 @@ firebase.initializeApp({
 var _proofData="";
 function handleProofUpload(input){
   var file=input.files[0];if(!file)return;
-  compressImage(file,400,400,0.5,function(data){
+  compressImage(file,700,700,0.7,function(data){
     _proofData=data;
     var prev=document.getElementById("proof-preview");
     if(prev)prev.innerHTML='<img src="'+_proofData+'"/>';
@@ -763,7 +763,7 @@ function renderMemberBar(){
 var _donorProofData="";
 function handleDonorProof(input){
   var file=input.files[0];if(!file)return;
-  compressImage(file,400,400,0.5,function(data){
+  compressImage(file,700,700,0.7,function(data){
     _donorProofData=data;
     var prev=document.getElementById("donor-proof-preview");
     if(prev)prev.innerHTML='<img src="'+_donorProofData+'"/>';
