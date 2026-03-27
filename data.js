@@ -71,6 +71,7 @@ function syncFromFirestore(){
 
 /* Refresh all views after data changes */
 function _refreshAllViews(){
+  /* Public views */
   if(typeof renderFunds==="function")renderFunds();
   if(typeof renderActs==="function")renderActs();
   if(typeof renderAllMembers==="function")renderAllMembers();
@@ -83,6 +84,28 @@ function _refreshAllViews(){
   if(typeof renderDonationSection==="function")renderDonationSection();
   if(typeof renderMemberBar==="function")renderMemberBar();
   if(typeof renderProjects==="function")renderProjects();
+  /* Admin views (refresh if admin panel is open) */
+  if(_isAdmin){
+    if(typeof renderAdminMembers==="function")renderAdminMembers();
+    if(typeof renderAdminContribs==="function")renderAdminContribs();
+    if(typeof renderAdminFunds==="function")renderAdminFunds();
+    if(typeof renderAdminWallets==="function")renderAdminWallets();
+    if(typeof renderAdminProjects==="function")renderAdminProjects();
+    /* Show pending member notification */
+    _notifyPendingMembers();
+  }
+}
+
+/* Notify admin of pending members */
+function _notifyPendingMembers(){
+  var members=getMembers();
+  var pending=0;
+  for(var i=0;i<members.length;i++){if(members[i].status==="pending")pending++;}
+  var badge=document.getElementById("pending-members-badge");
+  if(badge){
+    if(pending>0){badge.textContent=pending;badge.style.display="inline-block";}
+    else{badge.style.display="none";}
+  }
 }
 
 /* Real-time Firestore listeners */
@@ -253,6 +276,7 @@ function doAdminLogin(){
     _isAdmin=true;closeOv("ov-admin-login");
     var fab=document.getElementById("admin-fab");if(fab)fab.style.display="block";
     var btn=document.getElementById("admin-nav-btn");if(btn)btn.classList.add("logged");
+    _notifyPendingMembers();
     openAdminPanel();
   }else{if(err)err.style.display="block";}
 }
@@ -399,19 +423,39 @@ function renderAdminMembers(){
   var el=document.getElementById("members-alist");if(!el)return;
   var members=getMembers();
   if(!members.length){el.innerHTML='<div style="padding:1rem;text-align:center;color:#ccc;font-size:.82rem">Aucun membre inscrit</div>';return;}
-  var h="";
+  /* Separate pending and approved, show pending first */
+  var pending=[];var approved=[];
   for(var i=0;i<members.length;i++){
-    var m=members[i];
-    h+='<div class="arow">';
-    if(m.photo)h+='<img class="athumb" src="'+m.photo+'" onerror="this.style.display=\'none\'"/>';
-    else h+='<div class="contrib-avatar-ph" style="width:38px;height:38px;margin-right:.7rem;font-size:.9rem;flex-shrink:0">'+m.name[0]+'</div>';
-    h+='<div style="flex:1"><div class="arow-name">'+m.name+(m.username?' <span style="font-size:.7rem;color:#999">@'+m.username+'</span>':'')+'</div>';
-    h+='<span class="mem-badge '+(m.status==="approved"?"approved":"pending")+'">'+m.status+'</span></div>';
-    h+='<div>';
-    if(m.status==="pending")h+='<button class="btn-sm approve" onclick="approveMember(\''+m.id+'\')">&#10003; OK</button>';
-    h+='<button class="btn-sm del" onclick="deleteMember(\''+m.id+'\')">Suppr.</button></div></div>';
+    if(members[i].status==="pending")pending.push(members[i]);
+    else approved.push(members[i]);
+  }
+  var h="";
+  if(pending.length){
+    h+='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:.6rem 1rem;margin-bottom:.8rem;font-size:.82rem;color:#856404">';
+    h+='&#9888; <strong>'+pending.length+' demande'+(pending.length>1?'s':'')+'</strong> en attente d approbation</div>';
+    for(var p=0;p<pending.length;p++){
+      h+=_renderMemberRow(pending[p]);
+    }
+  }
+  if(approved.length){
+    if(pending.length)h+='<div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:1rem 0 .4rem;font-family:Cinzel,serif">Membres approuves ('+approved.length+')</div>';
+    for(var a=0;a<approved.length;a++){
+      h+=_renderMemberRow(approved[a]);
+    }
   }
   el.innerHTML=h;
+  _notifyPendingMembers();
+}
+function _renderMemberRow(m){
+  var h='<div class="arow"'+(m.status==="pending"?' style="background:rgba(255,193,7,.08);border-left:3px solid #ffc107;padding-left:.7rem"':'')+'>';
+  if(m.photo)h+='<img class="athumb" src="'+m.photo+'" onerror="this.style.display=\'none\'"/>';
+  else h+='<div class="contrib-avatar-ph" style="width:38px;height:38px;margin-right:.7rem;font-size:.9rem;flex-shrink:0">'+m.name[0]+'</div>';
+  h+='<div style="flex:1"><div class="arow-name">'+m.name+(m.username?' <span style="font-size:.7rem;color:#999">@'+m.username+'</span>':'')+'</div>';
+  h+='<span class="mem-badge '+(m.status==="approved"?"approved":"pending")+'">'+m.status+'</span></div>';
+  h+='<div>';
+  if(m.status==="pending")h+='<button class="btn-sm approve" onclick="approveMember(\''+m.id+'\')">&#10003; Approuver</button>';
+  h+='<button class="btn-sm del" onclick="deleteMember(\''+m.id+'\')">Suppr.</button></div></div>';
+  return h;
 }
 function openMemberForm(){
   _adminMemberPhoto="";
@@ -971,5 +1015,17 @@ function openAdminPanel(){
   renderAdminFunds();renderAdminContribs();renderAdminSlides();
   if(typeof renderAdminWallets==="function")renderAdminWallets();
   if(typeof renderAdminProjects==="function")renderAdminProjects();
-  swTab(0);openOv("ov-admin");
+  /* Auto-switch to Members tab if there are pending requests */
+  var pending=getMembers().filter(function(m){return m.status==="pending";});
+  var membersTabIdx=_getMembersTabIndex();
+  if(pending.length&&membersTabIdx>=0){swTab(membersTabIdx);}else{swTab(0);}
+  openOv("ov-admin");
+}
+/* Find the members tab index - varies by page */
+function _getMembersTabIndex(){
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++){
+    if(tabs[i].textContent.indexOf("Membres")!==-1)return i;
+  }
+  return -1;
 }
