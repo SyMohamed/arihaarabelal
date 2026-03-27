@@ -10,7 +10,7 @@ var FS_MAP={
   "ah_founders":"founders","ah_members":"members","ah_acts":"activities",
   "ah_funds":"funds","ah_contribs":"contributions",
   "ah_slides_rm":"slides_removed","ah_slides_ex":"slides_extra",
-  "ah_wallets":"wallets"
+  "ah_wallets":"wallets","ah_projects":"projects"
 };
 
 function fbSave(localKey,data){
@@ -82,6 +82,7 @@ function _refreshAllViews(){
   if(typeof buildSlides==="function")buildSlides();
   if(typeof renderDonationSection==="function")renderDonationSection();
   if(typeof renderMemberBar==="function")renderMemberBar();
+  if(typeof renderProjects==="function")renderProjects();
 }
 
 /* Real-time Firestore listeners */
@@ -185,6 +186,8 @@ function getContribs(){return ahLoad("ah_contribs",[]);}
 function saveContribs(v){ahSave("ah_contribs",v);fbSave("ah_contribs",v);}
 function getWallets(){return ahLoad("ah_wallets",[]);}
 function saveWallets(v){ahSave("ah_wallets",v);fbSave("ah_wallets",v);}
+function getProjects(){return ahLoad("ah_projects",[]);}
+function saveProjects(v){var r=ahSave("ah_projects",v);fbSave("ah_projects",v);return r;}
 function getSlidesRemoved(){return ahLoad("ah_slides_rm",[]);}
 function getSlidesExtra(){return ahLoad("ah_slides_ex",[]);}
 function saveSlidesRemoved(v){ahSave("ah_slides_rm",v);fbSave("ah_slides_rm",v);}
@@ -674,24 +677,123 @@ function deleteWallet(id){
   renderAdminWallets();if(typeof renderDonationSection==="function")renderDonationSection();
 }
 
+/* ── PROJECTS ADMIN ───────────────────────────────────── */
+var _projPhotos=[];
+function renderAdminProjects(){
+  var el=document.getElementById("projects-alist");if(!el)return;
+  var projects=getProjects();
+  if(!projects.length){el.innerHTML='<div style="padding:1rem;text-align:center;color:#ccc;font-size:.82rem">Aucun projet</div>';return;}
+  var h="";
+  for(var i=0;i<projects.length;i++){
+    var p=projects[i];
+    h+='<div class="arow"><div><div class="arow-name">'+p.name+'</div>';
+    h+='<div class="arow-sub">'+(p.status||"En cours")+(p.photos&&p.photos.length?' &bull; '+p.photos.length+' photo(s)':'')+'</div></div>';
+    h+='<div><button class="btn-sm edit" onclick="openProjectForm(\''+p.id+'\')">Modifier</button>';
+    h+='<button class="btn-sm del" onclick="delProject(\''+p.id+'\')">Suppr.</button></div></div>';
+  }
+  el.innerHTML=h;
+}
+function openProjectForm(projId){
+  var projects=getProjects();var proj=null;
+  if(projId){for(var i=0;i<projects.length;i++){if(projects[i].id===projId){proj=projects[i];break;}}}
+  _projPhotos=proj&&proj.photos?proj.photos.slice():[];
+  setVal("proj-name",proj?proj.name:"");
+  setVal("proj-desc",proj?proj.desc:"");
+  setVal("proj-date",proj?proj.date:"");
+  var statusEl=document.getElementById("proj-status");
+  if(statusEl)statusEl.value=proj?proj.status:"En cours";
+  var hidden=document.getElementById("proj-edit-id");
+  if(hidden)hidden.value=projId||"";
+  _renderProjPhotoPreviews();
+  openOv("ov-project");
+}
+function _renderProjPhotoPreviews(){
+  var row=document.getElementById("proj-photo-row");if(!row)return;
+  if(!_projPhotos.length){row.innerHTML='<span style="color:#bbb;font-size:.8rem">Aucune photo</span>';return;}
+  var h="";
+  for(var i=0;i<_projPhotos.length;i++){
+    h+='<div style="position:relative;display:inline-block"><img src="'+_projPhotos[i]+'" style="width:70px;height:70px;object-fit:cover;border-radius:2px;filter:grayscale(80%)"/>';
+    h+='<button onclick="_projPhotos.splice('+i+',1);_renderProjPhotoPreviews()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#c55;color:#fff;border:none;font-size:.7rem;cursor:pointer;line-height:1">&times;</button></div>';
+  }
+  row.innerHTML=h;
+}
+function handleProjPhotos(input){
+  var files=input.files;if(!files.length)return;
+  var toProcess=Math.min(files.length,10-_projPhotos.length);
+  for(var i=0;i<toProcess;i++){
+    (function(file){
+      compressImage(file,600,600,0.5,function(data){
+        _projPhotos.push(data);_renderProjPhotoPreviews();
+      });
+    })(files[i]);
+  }
+  input.value="";
+}
+function saveProject(){
+  var name=getVal("proj-name");if(!name){alert("Nom du projet requis.");return;}
+  var desc=getVal("proj-desc");
+  var date=getVal("proj-date");
+  var statusEl=document.getElementById("proj-status");
+  var status=statusEl?statusEl.value:"En cours";
+  var editId=document.getElementById("proj-edit-id");
+  var id=editId?editId.value:"";
+  var projects=getProjects();
+  if(id){
+    for(var i=0;i<projects.length;i++){
+      if(projects[i].id===id){projects[i].name=name;projects[i].desc=desc;projects[i].date=date;projects[i].status=status;projects[i].photos=_projPhotos;break;}
+    }
+  }else{
+    projects.push({id:"proj_"+Date.now(),name:name,desc:desc,date:date,status:status,photos:_projPhotos,createdDate:new Date().toLocaleDateString("fr-FR")});
+  }
+  if(!saveProjects(projects)){alert("Erreur: stockage plein.");return;}
+  closeOv("ov-project");
+  renderAdminProjects();
+  if(typeof renderProjects==="function")renderProjects();
+  showToast(id?"Projet modifie !":"Projet ajoute !");
+}
+function delProject(id){
+  if(!_isAdmin){alert("Seul l administrateur peut supprimer.");return;}
+  if(!confirm("Supprimer ce projet?"))return;
+  saveProjects(getProjects().filter(function(p){return p.id!==id;}));
+  renderAdminProjects();if(typeof renderProjects==="function")renderProjects();
+}
+
 /* ── CONTRIBUTIONS ADMIN ──────────────────────────────── */
 function renderAdminContribs(){
   var el=document.getElementById("contribs-alist");if(!el)return;
-  var pending=getContribs().filter(function(c){return c.status==="pending";});
-  if(!pending.length){el.innerHTML='<div style="padding:1rem;text-align:center;color:#ccc;font-size:.82rem">Aucune contribution en attente</div>';return;}
+  var allContribs=getContribs();
+  if(!allContribs.length){el.innerHTML='<div style="padding:1rem;text-align:center;color:#ccc;font-size:.82rem">Aucune contribution</div>';return;}
+  /* Show pending first, then approved */
+  var pending=allContribs.filter(function(c){return c.status==="pending";});
+  var approved=allContribs.filter(function(c){return c.status==="approved";});
   var h="";
-  for(var i=0;i<pending.length;i++){
-    var c=pending[i];
-    h+='<div class="arow" style="flex-wrap:wrap;gap:.5rem">';
-    h+='<div style="flex:1;min-width:140px"><div class="arow-name">'+c.memberName+'</div>';
-    h+='<div class="arow-sub">'+c.fundName+' &bull; '+c.date+'</div></div>';
-    h+='<div style="display:flex;align-items:center;gap:.4rem">';
-    h+='<input type="number" id="amt-'+c.id+'" value="'+c.amount+'" min="1" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:3px;font-size:.82rem;text-align:right"/>';
-    h+='<span style="font-size:.75rem;color:#999">MRU</span></div>';
-    if(c.proof)h+='<img class="proof-thumb" src="'+c.proof+'" onclick="showProof(\''+c.id+'\')" style="margin-right:.3rem"/>';
-    h+='<div style="display:flex;gap:.3rem">';
-    h+='<button class="btn-sm approve" onclick="approveContrib(\''+c.id+'\')">&#10003; Approuver</button>';
-    h+='<button class="btn-sm del" onclick="rejectContrib(\''+c.id+'\')">&#10007;</button></div></div>';
+  if(pending.length){
+    h+='<div style="font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:.8rem 0 .4rem;font-family:Cinzel,serif">En attente ('+pending.length+')</div>';
+    for(var i=0;i<pending.length;i++){
+      var c=pending[i];
+      h+='<div class="arow" style="flex-wrap:wrap;gap:.5rem">';
+      h+='<div style="flex:1;min-width:140px"><div class="arow-name">'+c.memberName+(c.isDonation?' <span style="font-size:.6rem;background:var(--gold);color:#fff;padding:1px 5px;border-radius:8px">Don</span>':'')+'</div>';
+      h+='<div class="arow-sub">'+c.fundName+' &bull; '+c.date+'</div></div>';
+      h+='<div style="display:flex;align-items:center;gap:.4rem">';
+      h+='<input type="number" id="amt-'+c.id+'" value="'+c.amount+'" min="1" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:3px;font-size:.82rem;text-align:right"/>';
+      h+='<span style="font-size:.75rem;color:#999">MRU</span></div>';
+      if(c.proof)h+='<img class="proof-thumb" src="'+c.proof+'" onclick="showProof(\''+c.id+'\')" style="margin-right:.3rem"/>';
+      h+='<div style="display:flex;gap:.3rem">';
+      h+='<button class="btn-sm approve" onclick="approveContrib(\''+c.id+'\')">&#10003; Approuver</button>';
+      h+='<button class="btn-sm del" onclick="rejectContrib(\''+c.id+'\')">&#10007;</button></div></div>';
+    }
+  }
+  if(approved.length){
+    h+='<div style="font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:1rem 0 .4rem;font-family:Cinzel,serif">Approuvees ('+approved.length+')</div>';
+    for(var j=approved.length-1;j>=0;j--){
+      var a=approved[j];
+      h+='<div class="arow" style="flex-wrap:wrap;gap:.5rem;opacity:.85">';
+      h+='<div style="flex:1;min-width:140px"><div class="arow-name">'+a.memberName+(a.isDonation?' <span style="font-size:.6rem;background:var(--gold);color:#fff;padding:1px 5px;border-radius:8px">Don</span>':'')+'</div>';
+      h+='<div class="arow-sub">'+a.fundName+' &bull; '+a.date+' &bull; '+a.amount.toLocaleString("fr-FR")+' MRU</div></div>';
+      h+='<div style="display:flex;gap:.3rem">';
+      h+='<button class="btn-sm edit" onclick="editApprovedContrib(\''+a.id+'\')">Modifier</button>';
+      h+='<button class="btn-sm del" onclick="removeContrib(\''+a.id+'\')">Suppr.</button></div></div>';
+    }
   }
   el.innerHTML=h;
 }
@@ -716,6 +818,28 @@ function rejectContrib(id){
   if(!confirm("Rejeter?"))return;
   saveContribs(getContribs().filter(function(c){return c.id!==id;}));
   renderAdminContribs();
+}
+function removeContrib(id){
+  if(!_isAdmin){alert("Seul l administrateur peut supprimer.");return;}
+  if(!confirm("Supprimer cette contribution approuvee ?"))return;
+  saveContribs(getContribs().filter(function(c){return c.id!==id;}));
+  renderAdminContribs();
+  if(typeof renderFunds==="function")renderFunds();
+  if(typeof renderAllContribs==="function")renderAllContribs();
+  if(typeof renderMyContribs==="function")renderMyContribs();
+  if(typeof updateTotal==="function")updateTotal();
+}
+function editApprovedContrib(id){
+  var newAmt=prompt("Nouveau montant (MRU):");
+  if(!newAmt)return;
+  newAmt=parseInt(newAmt);
+  if(!newAmt||newAmt<1){alert("Montant invalide.");return;}
+  var c=getContribs();
+  for(var i=0;i<c.length;i++){if(c[i].id===id){c[i].amount=newAmt;break;}}
+  saveContribs(c);renderAdminContribs();
+  if(typeof renderFunds==="function")renderFunds();
+  if(typeof renderAllContribs==="function")renderAllContribs();
+  if(typeof updateTotal==="function")updateTotal();
 }
 function showProof(id){
   var c=getContribs();for(var i=0;i<c.length;i++){if(c[i].id===id&&c[i].proof){var el=document.getElementById("proof-img");if(el){el.src=c[i].proof;openOv("ov-proof");}return;}}
@@ -846,5 +970,6 @@ function openAdminPanel(){
   renderAdminFounders();renderAdminMembers();renderActAlist();
   renderAdminFunds();renderAdminContribs();renderAdminSlides();
   if(typeof renderAdminWallets==="function")renderAdminWallets();
+  if(typeof renderAdminProjects==="function")renderAdminProjects();
   swTab(0);openOv("ov-admin");
 }

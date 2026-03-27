@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ari-Haara - Projets</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css?v=6"/>
+<style>
+/* ── PROJECT SPECIFIC ── */
+
+/* ── GRID OF PROJECT CARDS ── */
+.projects-grid{max-width:1200px;margin:0 auto;padding:3rem 2rem;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2rem;}
+@media(max-width:700px){.projects-grid{grid-template-columns:1fr;}}
+
+@keyframes projCardIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.proj-card{
+  background:var(--white);border-radius:6px;
+  box-shadow:0 4px 24px rgba(13,74,71,.08);
+  overflow:hidden;cursor:pointer;
+  transition:box-shadow .4s,transform .4s;
+  animation:projCardIn .5s ease both;
+}
+.proj-card:hover{box-shadow:0 12px 48px rgba(13,74,71,.16);transform:translateY(-4px);}
+.proj-card-cover{position:relative;width:100%;height:240px;overflow:hidden;background:#e8e4d8;}
+.proj-card-cover img{width:100%;height:100%;object-fit:cover;object-position:top;
+  filter:grayscale(100%);transition:filter .5s,transform .5s;display:block;}
+.proj-card:hover .proj-card-cover img{filter:grayscale(0%);transform:scale(1.05);}
+.proj-card-badge{position:absolute;bottom:.8rem;right:.8rem;
+  background:rgba(8,46,44,.75);color:var(--cream);font-size:.7rem;
+  padding:.3rem .7rem;border-radius:20px;letter-spacing:.08em;backdrop-filter:blur(4px);}
+.proj-card-status{position:absolute;top:.8rem;left:.8rem;
+  font-size:.65rem;padding:.3rem .7rem;border-radius:20px;letter-spacing:.1em;
+  text-transform:uppercase;font-family:"Lato",sans-serif;font-weight:700;backdrop-filter:blur(4px);}
+.proj-card-status.en-cours{background:rgba(13,74,71,.85);color:var(--cream);}
+.proj-card-status.termine{background:rgba(201,168,76,.85);color:#fff;}
+.proj-card-status.planifie{background:rgba(100,100,100,.75);color:#eee;}
+.proj-card-noimg{width:100%;height:240px;background:var(--teal-dark);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--cream-dark);font-size:3rem;opacity:.4;}
+.proj-card-info{padding:1.2rem 1.4rem;}
+.proj-card-title{font-family:"Cinzel",serif;font-size:1.1rem;color:var(--teal-dark);letter-spacing:.03em;margin-bottom:.4rem;}
+.proj-card-date{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cream-dark);margin-bottom:.6rem;}
+.proj-card-snippet{font-family:"Cormorant Garamond",serif;font-size:.95rem;
+  line-height:1.7;color:#666;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* ── DETAIL OVERLAY ── */
+.proj-detail-overlay{display:none;position:fixed;inset:0;z-index:2500;
+  background:rgba(4,10,10,.92);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.proj-detail-overlay.open{display:block;}
+.proj-detail{max-width:960px;margin:0 auto;padding:2rem;padding-top:4rem;}
+.proj-detail-close{position:fixed;top:1.2rem;right:1.5rem;z-index:2600;
+  background:rgba(232,213,160,.12);border:1px solid rgba(232,213,160,.25);
+  color:var(--cream);width:44px;height:44px;border-radius:50%;
+  font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .3s;}
+.proj-detail-close:hover{background:rgba(232,213,160,.3);}
+.proj-detail-title{font-family:"Cinzel",serif;font-size:clamp(1.5rem,4vw,2.4rem);
+  color:var(--cream);letter-spacing:.04em;margin-bottom:.5rem;}
+.proj-detail-meta{display:flex;gap:1rem;align-items:center;margin-bottom:2rem;flex-wrap:wrap;}
+.proj-detail-date{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cream-dark);}
+.proj-detail-status-tag{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:.3rem .8rem;border-radius:20px;font-weight:700;}
+.proj-detail-status-tag.en-cours{background:rgba(13,74,71,.4);color:var(--cream);}
+.proj-detail-status-tag.termine{background:rgba(201,168,76,.4);color:var(--cream);}
+.proj-detail-status-tag.planifie{background:rgba(100,100,100,.4);color:#ccc;}
+.proj-detail-desc{font-family:"Cormorant Garamond",serif;font-size:1.15rem;
+  line-height:2;color:rgba(232,213,160,.8);max-width:720px;margin-bottom:2.5rem;white-space:pre-line;}
+.proj-detail-photos{display:grid;gap:6px;}
+.proj-detail-photos.g1{grid-template-columns:1fr;}
+.proj-detail-photos.g2{grid-template-columns:1fr 1fr;}
+.proj-detail-photos.g3{grid-template-columns:1fr 1fr 1fr;}
+.proj-detail-photo{position:relative;overflow:hidden;border-radius:3px;cursor:pointer;background:#e8e4d8;}
+.proj-detail-photo img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:grayscale(100%);transition:filter .5s,transform .5s;}
+.proj-detail-photo:hover img{filter:grayscale(0%);transform:scale(1.03);}
+.proj-detail-photos.g1 .proj-detail-photo{height:auto;max-height:520px;}
+.proj-detail-photos.g1 .proj-detail-photo img{height:auto;max-height:520px;object-fit:contain;}
+.proj-detail-photos.g2 .proj-detail-photo{height:300px;}
+.proj-detail-photos.g3 .proj-detail-photo{height:250px;}
+.proj-detail-memories{margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(232,213,160,.12);
+  font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1rem;
+  color:rgba(232,213,160,.5);text-align:center;letter-spacing:.05em;}
+
+/* LIGHTBOX */
+.lightbox{
+  display:none;position:fixed;inset:0;
+  background:rgba(4,10,10,.95);z-index:3000;
+  align-items:center;justify-content:center;
+}
+.lightbox.open{display:flex;}
+.lightbox-inner{position:relative;max-width:90vw;max-height:90vh;display:flex;align-items:center;gap:1rem;}
+.lightbox img{max-width:80vw;max-height:85vh;object-fit:contain;border-radius:2px;display:block;}
+.lb-btn{
+  background:rgba(232,213,160,.12);border:1px solid rgba(232,213,160,.2);
+  color:var(--cream);width:44px;height:44px;border-radius:50%;
+  font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .3s;
+}
+.lb-btn:hover{background:rgba(232,213,160,.25);}
+.lb-close{
+  position:fixed;top:1.5rem;right:1.5rem;
+  background:rgba(232,213,160,.12);border:1px solid rgba(232,213,160,.2);
+  color:var(--cream);width:44px;height:44px;border-radius:50%;
+  font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  z-index:3001;transition:all .3s;
+}
+.lb-close:hover{background:rgba(232,213,160,.3);}
+.lb-counter{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  color:rgba(232,213,160,.5);font-size:.78rem;letter-spacing:.18em;
+  z-index:3001;
+}
+
+/* Project form status select */
+.fg select{width:100%;border:1px solid #ddd;padding:.58rem .9rem;font-family:"Lato",sans-serif;
+  font-size:.9rem;border-radius:1px;background:#fafafa;transition:border-color .3s;}
+.fg select:focus{outline:none;border-color:var(--teal);}
+</style>
+</head>
+<body>
+
+<nav id="main-nav">
+  <a class="nav-logo" href="index.html"><svg class="nav-logo-icon" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="20" y="25" text-anchor="middle" font-size="14" fill="currentColor" font-family="Cinzel">A</text></svg>Ari-Haara</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Accueil</a></li>
+    <li><a href="activites.html">Activites</a></li>
+    <li><a href="projets.html" class="active">Projets</a></li>
+    <li><a href="membres.html">Membres</a></li>
+    <li><a href="caisse.html">Caisse Solidaire</a></li>
+  </ul>
+  <a href="membres.html" class="btn-member-nav" id="member-nav-btn">&#128100; Connexion</a>
+  <button class="btn-admin" id="admin-nav-btn" onclick="openLoginOrPanel()">Admin</button>
+</nav>
+
+<div class="pg-banner">
+  <p class="lbl center">Ari-Haara Emergent</p>
+  <h1 class="ttl lt">Nos Projets</h1>
+  <p class="pg-banner-sub">Initiatives et projets en cours au sein de la communaute</p>
+</div>
+
+<!-- Project Grid -->
+<div class="projects-grid" id="projects-list"></div>
+
+<!-- Detail Overlay -->
+<div class="proj-detail-overlay" id="proj-detail-ov">
+  <button class="proj-detail-close" onclick="closeProjDetail()">&#215;</button>
+  <div class="proj-detail" id="proj-detail-content"></div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">&#215;</button>
+  <div class="lightbox-inner" onclick="event.stopPropagation()">
+    <button class="lb-btn" onclick="lbPrev()">&#8249;</button>
+    <img id="lb-img" src="" alt=""/>
+    <button class="lb-btn" onclick="lbNext()">&#8250;</button>
+  </div>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<footer>
+  <div class="ft-name">Ari-Haara Emergent</div>
+  <div class="ft-sub">Village d Afrique &middot; Unis pour l Avenir</div>
+</footer>
+
+<!-- Admin FAB -->
+<button id="admin-fab" onclick="openAdminPanel()">&#9998; Administration</button>
+
+<!-- ADMIN LOGIN -->
+<div class="overlay" id="ov-admin-login">
+  <div class="modal narrow">
+    <div class="mhd"><h3>Connexion Admin</h3><button class="mclose" onclick="closeOv('ov-admin-login')">&#215;</button></div>
+    <div class="mbd">
+      <div class="fg"><label>Mot de passe</label><input type="password" id="pw-input"/></div>
+      <p class="ferr" id="pw-err">Mot de passe incorrect.</p>
+      <button class="btn-p full" onclick="doAdminLogin()">Se connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="overlay" id="ov-admin">
+  <div class="modal wide">
+    <div class="mhd"><h3>Administration - Projets</h3><button class="mclose" onclick="closeOv('ov-admin')">&#215;</button></div>
+    <div class="mbd">
+      <div class="tabs">
+        <button class="tab active" onclick="swTab(0)">Projets</button>
+        <button class="tab" onclick="swTab(1)">Membres</button>
+      </div>
+      <div class="tpanel active" id="tp-0">
+        <button class="btn-add" onclick="openProjectForm(null)">+ Nouveau projet</button>
+        <div class="alist" id="projects-alist"></div>
+        <hr style="margin:1rem 0;border:none;border-top:1px solid #eee"/>
+        <button class="btn-p danger full" onclick="doAdminLogout()">Deconnexion</button>
+      </div>
+      <div class="tpanel" id="tp-1">
+        <button class="btn-add" onclick="openMemberForm()">+ Ajouter un membre</button>
+        <div class="alist" id="members-alist"></div>
+        <hr style="margin:1rem 0;border:none;border-top:1px solid #eee"/>
+        <button class="btn-p danger full" onclick="doAdminLogout()">Deconnexion</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Form -->
+<div class="overlay" id="ov-project">
+  <div class="modal wide">
+    <div class="mhd"><h3>Projet</h3><button class="mclose" onclick="closeOv('ov-project')">&#215;</button></div>
+    <div class="mbd">
+      <input type="hidden" id="proj-edit-id"/>
+      <div class="fg"><label>Nom du projet</label><input type="text" id="proj-name" placeholder="ex: Construction du puits communautaire"/></div>
+      <div class="fg"><label>Date / Periode</label><input type="text" id="proj-date" placeholder="ex: Janvier 2026 - En cours"/></div>
+      <div class="fg"><label>Statut</label>
+        <select id="proj-status">
+          <option value="En cours">En cours</option>
+          <option value="Termine">Termine</option>
+          <option value="Planifie">Planifie</option>
+        </select>
+      </div>
+      <div class="fg"><label>Description</label><textarea id="proj-desc" placeholder="Decrivez ce projet, son objectif, son avancement..." style="min-height:120px"></textarea></div>
+      <div class="fg"><label>Photos (max 10)</label>
+        <label class="upload-btn">&#128247; Ajouter des photos<input type="file" accept="image/*" multiple style="display:none" onchange="handleProjPhotos(this)"/></label>
+        <div id="proj-photo-row" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem"></div>
+      </div>
+      <button class="btn-p full" onclick="saveProject()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MEMBER FORM -->
+<div class="overlay" id="ov-add-member">
+  <div class="modal">
+    <div class="mhd"><h3>Ajouter un Membre</h3><button class="mclose" onclick="closeOv('ov-add-member')">&#215;</button></div>
+    <div class="mbd">
+      <div class="fg"><label>Nom complet</label><input type="text" id="adm-mem-name" placeholder="Prenom Nom"/></div>
+      <div class="fg"><label>Nom d utilisateur</label><input type="text" id="adm-mem-username" placeholder="Nom d utilisateur du membre"/></div>
+      <div class="fg"><label>Mot de passe</label><input type="password" id="adm-mem-password" placeholder="Mot de passe du membre"/></div>
+      <div class="fg"><label>Role / Profession</label><input type="text" id="adm-mem-role" placeholder="ex: Eleveur, Enseignant..."/></div>
+      <div class="fg"><label>Photo (optionnel)</label>
+        <label class="upload-btn">&#128247; Choisir une photo<input type="file" accept="image/*" style="display:none" onchange="handleAdminMemberPhoto(this)"/></label>
+        <img id="adm-mem-photo-prev" src="" style="display:none;width:70px;height:70px;object-fit:cover;border-radius:50%;filter:grayscale(100%);margin-top:.5rem"/>
+      </div>
+      <button class="btn-p full" onclick="saveAdminMember()">Ajouter le membre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS
+     ══════════════════════════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCY1LnnXNjUjKhWY6ck5X-lrcLj0mMvdvE",
+  authDomain:"arihaara.firebaseapp.com",
+  projectId:"arihaara",
+  storageBucket:"arihaara.firebasestorage.app",
+  messagingSenderId:"1034656505245",
+  appId:"1:1034656505245:web:eca4018469b3ae3021a374"
+});
+</script>
+<script src="data.js?v=6"></script>
+<script>
+(function(){
+  var btn=document.getElementById("member-nav-btn");
+  if(!btn)return;
+  var m=curMember();
+  if(m){btn.textContent=m.name;btn.href="membres.html";}
+})();
+</script>
+<script>
+document.getElementById("pw-input").addEventListener("keydown",function(e){if(e.key==="Enter")doAdminLogin();});
+
+/* ── LIGHTBOX ── */
+var _lbPhotos=[];var _lbIdx=0;
+function openLightbox(photos,idx){
+  _lbPhotos=photos;_lbIdx=idx;
+  document.getElementById("lb-img").src=_lbPhotos[_lbIdx];
+  document.getElementById("lb-counter").textContent=(_lbIdx+1)+" / "+_lbPhotos.length;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("open");}
+function lbPrev(){_lbIdx=(_lbIdx-1+_lbPhotos.length)%_lbPhotos.length;document.getElementById("lb-img").src=_lbPhotos[_lbIdx];document.getElementById("lb-counter").textContent=(_lbIdx+1)+" / "+_lbPhotos.length;}
+function lbNext(){_lbIdx=(_lbIdx+1)%_lbPhotos.length;document.getElementById("lb-img").src=_lbPhotos[_lbIdx];document.getElementById("lb-counter").textContent=(_lbIdx+1)+" / "+_lbPhotos.length;}
+document.addEventListener("keydown",function(e){if(!document.getElementById("lightbox").classList.contains("open"))return;if(e.key==="ArrowLeft")lbPrev();if(e.key==="ArrowRight")lbNext();if(e.key==="Escape")closeLightbox();});
+
+/* ── RENDER PROJECTS ── */
+function renderProjects(){
+  var projects=getProjects();var el=document.getElementById("projects-list");
+  if(!projects.length){
+    el.innerHTML='<div class="empty-msg" style="grid-column:1/-1">Aucun projet enregistre.<br><span style="font-size:.85rem;opacity:.6">L administrateur peut en ajouter via le bouton Admin.</span></div>';
+    return;
+  }
+  var html="";
+  for(var i=0;i<projects.length;i++){
+    var p=projects[i];var photos=p.photos||[];
+    var delay=Math.min(i*0.1,0.8);
+    var statusClass=p.status==="En cours"?"en-cours":p.status==="Termine"?"termine":"planifie";
+    html+='<div class="proj-card" style="animation-delay:'+delay+'s" onclick="openProjDetail(\''+p.id+'\')">';
+    if(photos.length){
+      html+='<div class="proj-card-cover"><img src="'+photos[0]+'" alt="'+p.name+'" loading="lazy"/>';
+      html+='<div class="proj-card-status '+statusClass+'">'+p.status+'</div>';
+      if(photos.length>1)html+='<div class="proj-card-badge">'+photos.length+' photos</div>';
+      html+='</div>';
+    } else {
+      html+='<div class="proj-card-noimg" style="position:relative">&#128204;';
+      html+='<div class="proj-card-status '+statusClass+'" style="position:absolute;top:.8rem;left:.8rem">'+p.status+'</div></div>';
+    }
+    html+='<div class="proj-card-info">';
+    html+='<div class="proj-card-title">'+p.name+'</div>';
+    if(p.date)html+='<div class="proj-card-date">&#128197; '+p.date+'</div>';
+    if(p.desc)html+='<div class="proj-card-snippet">'+p.desc+'</div>';
+    html+='</div></div>';
+  }
+  el.innerHTML=html;
+}
+
+/* ── PROJECT DETAIL VIEW ── */
+function openProjDetail(id){
+  var projects=getProjects();var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id===id){p=projects[i];break;}}
+  if(!p)return;
+  var photos=p.photos||[];
+  var photosJson=JSON.stringify(photos).replace(/'/g,"&#39;");
+  var statusClass=p.status==="En cours"?"en-cours":p.status==="Termine"?"termine":"planifie";
+  var h='';
+  h+='<div class="proj-detail-title">'+p.name+'</div>';
+  h+='<div class="proj-detail-meta">';
+  if(p.date)h+='<div class="proj-detail-date">&#128197; '+p.date+'</div>';
+  h+='<span class="proj-detail-status-tag '+statusClass+'">'+p.status+'</span>';
+  h+='</div>';
+  if(p.desc)h+='<div class="proj-detail-desc">'+p.desc+'</div>';
+  if(photos.length){
+    var gc="g3";
+    if(photos.length===1)gc="g1";
+    else if(photos.length===2)gc="g2";
+    h+='<div class="proj-detail-photos '+gc+'">';
+    for(var j=0;j<photos.length;j++){
+      h+='<div class="proj-detail-photo" onclick="openLightbox('+photosJson+','+j+')">';
+      h+='<img src="'+photos[j]+'" alt="" loading="lazy"/></div>';
+    }
+    h+='</div>';
+  }
+  if(photos.length)h+='<div class="proj-detail-memories">&#10024; Galerie du projet &mdash; '+photos.length+' photo'+(photos.length>1?'s':'')+'</div>';
+  document.getElementById("proj-detail-content").innerHTML=h;
+  document.getElementById("proj-detail-ov").classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeProjDetail(){
+  document.getElementById("proj-detail-ov").classList.remove("open");
+  document.body.style.overflow="";
+}
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&document.getElementById("proj-detail-ov").classList.contains("open"))closeProjDetail();
+});
+
+renderProjects();
+window.addEventListener("scroll",function(){var b=document.getElementById("back-to-top");if(b)b.classList.toggle("visible",window.scrollY>300);});
+</script>
+<button class="back-to-top" id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+</body>
+</html>

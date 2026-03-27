@@ -108,6 +108,7 @@
   <ul class="nav-links">
     <li><a href="index.html">Accueil</a></li>
     <li><a href="activites.html">Activites</a></li>
+    <li><a href="projets.html">Projets</a></li>
     <li><a href="membres.html">Membres</a></li>
     <li><a href="caisse.html" class="active">Caisse Solidaire</a></li>
   </ul>
@@ -343,6 +344,10 @@
     <div class="mbd">
       <input type="hidden" id="contrib-fund-id"/>
       <p id="contrib-fund-desc" style="font-size:.88rem;color:#666;margin-bottom:1.2rem;line-height:1.5;"></p>
+      <div class="fg" id="contrib-donor-wrap" style="display:none">
+        <label>Votre nom complet</label>
+        <input type="text" id="contrib-donor-name" placeholder="Prenom Nom"/>
+      </div>
       <div class="fg">
         <label>Montant (MRU)</label>
         <input type="number" id="contrib-amount" placeholder="Ex: 500" min="1"/>
@@ -448,12 +453,15 @@ function handleProofUpload(input){
 /* ── Open contribution modal ── */
 function openContribModal(fundId){
   var m=curMember();
-  if(!m){alert("Veuillez vous connecter en tant que membre pour contribuer.");return;}
-  if(m.status!=="approved"){alert("Votre compte membre est en attente d'approbation.");return;}
   var funds=getFunds();
   var fund=null;
   for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fund=funds[i];break;}}
   if(!fund)return;
+  /* Membership fees: members only */
+  if(fund.type==="membership"){
+    if(!m){alert("Les cotisations sont reservees aux membres. Connectez-vous sur la page Membres.");return;}
+    if(m.status!=="approved"){alert("Votre compte membre est en attente d approbation.");return;}
+  }
   document.getElementById("contrib-fund-id").value=fund.id;
   document.getElementById("contrib-modal-title").textContent="Contribuer: "+fund.name;
   document.getElementById("contrib-fund-desc").textContent=fund.desc||"";
@@ -461,6 +469,9 @@ function openContribModal(fundId){
   document.getElementById("contrib-err").style.display="none";
   document.getElementById("contrib-ok").style.display="none";
   document.getElementById("proof-preview").innerHTML="";
+  /* Show/hide donor name field based on login status */
+  var dnWrap=document.getElementById("contrib-donor-wrap");
+  if(dnWrap)dnWrap.style.display=m?"none":"block";
   _proofData="";
   openOv("ov-contrib");
 }
@@ -477,22 +488,37 @@ function submitContrib(){
     errEl.textContent="Veuillez entrer un montant valide.";
     errEl.style.display="block";return;
   }
-  var m=curMember();if(!m){errEl.textContent="Non connecte.";errEl.style.display="block";return;}
+  var m=curMember();
+  var donorNameEl=document.getElementById("contrib-donor-name");
+  var donorName=donorNameEl?donorNameEl.value.trim():"";
 
-  var funds=getFunds();var fundName="";
-  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;break;}}
+  /* If not logged in, require donor name */
+  if(!m&&!donorName){
+    errEl.textContent="Veuillez entrer votre nom.";
+    errEl.style.display="block";return;
+  }
+
+  var funds=getFunds();var fundName="";var fundType="";
+  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;fundType=funds[i].type;break;}}
+
+  /* Membership fees require login */
+  if(fundType==="membership"&&!m){
+    errEl.textContent="Les cotisations sont reservees aux membres.";
+    errEl.style.display="block";return;
+  }
 
   var contrib={
-    id:"c_"+Date.now(),
+    id:(m?"c_":"d_")+Date.now(),
     fundId:fundId,
     fundName:fundName,
-    memberId:m.id,
-    memberName:m.name,
-    memberPhoto:m.photo||"",
+    memberId:m?m.id:"donor",
+    memberName:m?m.name:donorName+" (Don)",
+    memberPhoto:m?(m.photo||""):"",
     amount:amount,
     proof:_proofData,
     date:new Date().toLocaleDateString("fr-FR"),
-    status:"pending"
+    status:"pending",
+    isDonation:!m
   };
   var contribs=getContribs();
   contribs.push(contrib);
@@ -500,6 +526,7 @@ function submitContrib(){
 
   okEl.style.display="block";
   document.getElementById("contrib-amount").value="";
+  var dn=document.getElementById("contrib-donor-name");if(dn)dn.value="";
   document.getElementById("proof-preview").innerHTML="";
   _proofData="";
 
