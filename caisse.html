@@ -75,6 +75,29 @@
 /* My contribs section */
 .my-contribs-section{padding:3rem 2rem;background:#f5f0e8;}
 .my-contribs-wrap{max-width:1080px;margin:0 auto;}
+
+/* Donation / Soutien Communautaire section */
+.donation-section{padding:3rem 0;background:linear-gradient(135deg,#f9f6ef,#f0ebe0);}
+.donation-wrap{max-width:1080px;margin:0 auto;padding:0 2rem;}
+.donation-header{text-align:center;margin-bottom:2rem;}
+.donation-desc{font-family:"Cormorant Garamond",serif;font-size:1rem;color:#777;max-width:600px;margin:.5rem auto 0;line-height:1.6;}
+.wallet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.2rem;margin-bottom:2rem;}
+.wallet-card{background:var(--white);border-radius:6px;padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;
+  box-shadow:0 2px 12px rgba(13,74,71,.06);transition:transform .2s,box-shadow .2s;}
+.wallet-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(13,74,71,.1);}
+.wallet-card-icon{width:48px;height:48px;border-radius:10px;object-fit:contain;flex-shrink:0;}
+.wallet-card-icon-ph{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));
+  display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:1.4rem;flex-shrink:0;}
+.wallet-card-info{flex:1;}
+.wallet-card-name{font-family:"Cinzel",serif;font-size:.9rem;color:var(--teal-dark);margin-bottom:.2rem;}
+.wallet-card-phone{font-size:.95rem;color:#555;font-weight:600;letter-spacing:.03em;}
+.wallet-card-copy{background:rgba(13,74,71,.08);border:1px solid rgba(13,74,71,.15);color:var(--teal-dark);
+  padding:.35rem .8rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:3px;
+  font-family:"Lato",sans-serif;transition:all .2s;flex-shrink:0;}
+.wallet-card-copy:hover{background:rgba(13,74,71,.15);}
+.donation-form-card{background:var(--white);border-radius:6px;padding:2rem;box-shadow:0 2px 12px rgba(13,74,71,.06);max-width:500px;margin:0 auto;}
+.donation-form-title{font-family:"Cinzel",serif;font-size:1rem;color:var(--teal-dark);margin-bottom:1rem;text-align:center;}
+.no-wallets-msg{text-align:center;padding:2rem;font-family:"Cormorant Garamond",serif;color:#aaa;font-size:.95rem;}
 </style>
 </head>
 <body>
@@ -85,6 +108,7 @@
   <ul class="nav-links">
     <li><a href="index.html">Accueil</a></li>
     <li><a href="activites.html">Activites</a></li>
+    <li><a href="projets.html">Projets</a></li>
     <li><a href="membres.html">Membres</a></li>
     <li><a href="caisse.html" class="active">Caisse Solidaire</a></li>
   </ul>
@@ -155,6 +179,34 @@
 
 </div><!-- /page-top -->
 
+<!-- ── SOUTIEN COMMUNAUTAIRE (Donations) ── -->
+<div class="donation-section" id="donation-section">
+  <div class="donation-wrap">
+    <div class="donation-header">
+      <p class="lbl" style="color:var(--teal)">&#129309; Solidarite</p>
+      <h2 style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--teal-dark);margin-bottom:.3rem">Soutien Communautaire</h2>
+      <p class="donation-desc">Vous n etes pas membre mais souhaitez soutenir nos projets ? Bailleurs de fonds, partenaires ou sympathisants, contribuez a faciliter le financement de nos activites communautaires.</p>
+    </div>
+    <div id="wallets-display"></div>
+    <div class="donation-form-card" id="donation-form-card">
+      <div class="donation-form-title">Declarer un don</div>
+      <div class="fg"><label>Votre nom complet</label><input type="text" id="donor-name" placeholder="Prenom Nom"/></div>
+      <div class="fg"><label>Montant envoye (MRU)</label><input type="number" id="donor-amount" placeholder="Ex: 5000" min="1"/></div>
+      <div class="fg"><label>Fonds de destination</label><select id="donor-fund"><option value="">-- Choisir un fonds --</option></select></div>
+      <div class="fg">
+        <label>Preuve de paiement (optionnel)</label>
+        <div class="proof-upload-area">
+          <label class="upload-btn"><span>&#128247; Choisir une image</span><input type="file" accept="image/*" style="display:none" onchange="handleDonorProof(this)"/></label>
+          <div class="proof-preview" id="donor-proof-preview"></div>
+        </div>
+      </div>
+      <div class="ferr" id="donor-err"></div>
+      <div class="fok" id="donor-ok">Don enregistre ! En attente d approbation par l administrateur. Merci pour votre generosite !</div>
+      <button class="btn-p full" onclick="submitDonation()">Envoyer le don</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── FOOTER ── -->
 <footer>
   <div class="ft-name">Ari-Haara Emergent</div>
@@ -162,7 +214,7 @@
 </footer>
 
 <!-- ── ADMIN FAB ── -->
-<button id="admin-fab" onclick="openAdminPanel()">&#9881; Admin</button>
+<button id="admin-fab" onclick="openAdminPanel()">&#9881; Admin<span class="pending-badge" id="pending-members-badge"></span></button>
 
 <!-- ── ADD FUND QUICK BTN ── -->
 <button class="add-fund-btn" id="add-fund-fab" onclick="openFundForm()" title="Ajouter un fonds">+</button>
@@ -201,7 +253,8 @@
         <button class="tab active" onclick="swTab(0)">Fonds</button>
         <button class="tab" onclick="swTab(1)">Contributions</button>
         <button class="tab" onclick="swTab(2)">Membres</button>
-        <button class="tab" onclick="swTab(3)">Donnees</button>
+        <button class="tab" onclick="swTab(3)">Portefeuilles</button>
+        <button class="tab" onclick="swTab(4)">Donnees</button>
       </div>
 
       <!-- Tab 0: Fonds -->
@@ -222,8 +275,15 @@
         <div class="alist" id="members-alist"></div>
       </div>
 
-      <!-- Tab 3: Donnees -->
+      <!-- Tab 3: Portefeuilles Mobiles -->
       <div class="tpanel" id="tp-3">
+        <p style="font-size:.82rem;color:#888;margin-bottom:.8rem">Configurez les numeros de portefeuille mobile ou les donateurs peuvent envoyer leurs contributions.</p>
+        <button class="btn-add" onclick="openWalletForm()">+ Ajouter un portefeuille</button>
+        <div class="alist" id="wallets-alist"></div>
+      </div>
+
+      <!-- Tab 4: Donnees -->
+      <div class="tpanel" id="tp-4">
         <div class="notice" style="margin-bottom:1rem">Exportez vos donnees pour les importer sur un autre appareil.</div>
         <button class="btn-p full" onclick="exportAllData()" style="margin-bottom:.6rem;background:var(--gold);color:var(--black)">&#128190; Exporter toutes les donnees</button>
         <button class="btn-p full" onclick="importAllData()" style="margin-bottom:.6rem">&#128194; Importer des donnees</button>
@@ -284,6 +344,10 @@
     <div class="mbd">
       <input type="hidden" id="contrib-fund-id"/>
       <p id="contrib-fund-desc" style="font-size:.88rem;color:#666;margin-bottom:1.2rem;line-height:1.5;"></p>
+      <div class="fg" id="contrib-donor-wrap" style="display:none">
+        <label>Votre nom complet</label>
+        <input type="text" id="contrib-donor-name" placeholder="Prenom Nom"/>
+      </div>
       <div class="fg">
         <label>Montant (MRU)</label>
         <input type="number" id="contrib-amount" placeholder="Ex: 500" min="1"/>
@@ -333,6 +397,22 @@
   </div>
 </div>
 
+<!-- Add Wallet Form -->
+<div class="overlay" id="ov-add-wallet">
+  <div class="modal">
+    <div class="mhd"><h3>Ajouter un Portefeuille Mobile</h3><button class="mclose" onclick="closeOv('ov-add-wallet')">&#215;</button></div>
+    <div class="mbd">
+      <div class="fg"><label>Nom de l application</label><input type="text" id="wallet-name" placeholder="Ex: Sedad, Masrivi, Bankily..."/></div>
+      <div class="fg"><label>Numero de telephone</label><input type="text" id="wallet-phone" placeholder="Ex: +222 XX XX XX XX"/></div>
+      <div class="fg"><label>Icone de l application (optionnel)</label>
+        <label class="upload-btn">&#128247; Choisir un logo<input type="file" accept="image/*" style="display:none" onchange="handleWalletIcon(this)"/></label>
+        <img id="wallet-icon-prev" src="" style="display:none;width:48px;height:48px;object-fit:contain;border-radius:8px;margin-top:.5rem"/>
+      </div>
+      <button class="btn-p full" onclick="saveWallet()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════════
      SCRIPTS
      ══════════════════════════════════════════════════════════ -->
@@ -363,7 +443,7 @@ firebase.initializeApp({
 var _proofData="";
 function handleProofUpload(input){
   var file=input.files[0];if(!file)return;
-  compressImage(file,400,400,0.5,function(data){
+  compressImage(file,700,700,0.7,function(data){
     _proofData=data;
     var prev=document.getElementById("proof-preview");
     if(prev)prev.innerHTML='<img src="'+_proofData+'"/>';
@@ -373,12 +453,15 @@ function handleProofUpload(input){
 /* ── Open contribution modal ── */
 function openContribModal(fundId){
   var m=curMember();
-  if(!m){alert("Veuillez vous connecter en tant que membre pour contribuer.");return;}
-  if(m.status!=="approved"){alert("Votre compte membre est en attente d'approbation.");return;}
   var funds=getFunds();
   var fund=null;
   for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fund=funds[i];break;}}
   if(!fund)return;
+  /* Membership fees: members only */
+  if(fund.type==="membership"){
+    if(!m){alert("Les cotisations sont reservees aux membres. Connectez-vous sur la page Membres.");return;}
+    if(m.status!=="approved"){alert("Votre compte membre est en attente d approbation.");return;}
+  }
   document.getElementById("contrib-fund-id").value=fund.id;
   document.getElementById("contrib-modal-title").textContent="Contribuer: "+fund.name;
   document.getElementById("contrib-fund-desc").textContent=fund.desc||"";
@@ -386,6 +469,9 @@ function openContribModal(fundId){
   document.getElementById("contrib-err").style.display="none";
   document.getElementById("contrib-ok").style.display="none";
   document.getElementById("proof-preview").innerHTML="";
+  /* Show/hide donor name field based on login status */
+  var dnWrap=document.getElementById("contrib-donor-wrap");
+  if(dnWrap)dnWrap.style.display=m?"none":"block";
   _proofData="";
   openOv("ov-contrib");
 }
@@ -402,22 +488,37 @@ function submitContrib(){
     errEl.textContent="Veuillez entrer un montant valide.";
     errEl.style.display="block";return;
   }
-  var m=curMember();if(!m){errEl.textContent="Non connecte.";errEl.style.display="block";return;}
+  var m=curMember();
+  var donorNameEl=document.getElementById("contrib-donor-name");
+  var donorName=donorNameEl?donorNameEl.value.trim():"";
 
-  var funds=getFunds();var fundName="";
-  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;break;}}
+  /* If not logged in, require donor name */
+  if(!m&&!donorName){
+    errEl.textContent="Veuillez entrer votre nom.";
+    errEl.style.display="block";return;
+  }
+
+  var funds=getFunds();var fundName="";var fundType="";
+  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;fundType=funds[i].type;break;}}
+
+  /* Membership fees require login */
+  if(fundType==="membership"&&!m){
+    errEl.textContent="Les cotisations sont reservees aux membres.";
+    errEl.style.display="block";return;
+  }
 
   var contrib={
-    id:"c_"+Date.now(),
+    id:(m?"c_":"d_")+Date.now(),
     fundId:fundId,
     fundName:fundName,
-    memberId:m.id,
-    memberName:m.name,
-    memberPhoto:m.photo||"",
+    memberId:m?m.id:"donor",
+    memberName:m?m.name:donorName+" (Don)",
+    memberPhoto:m?(m.photo||""):"",
     amount:amount,
     proof:_proofData,
     date:new Date().toLocaleDateString("fr-FR"),
-    status:"pending"
+    status:"pending",
+    isDonation:!m
   };
   var contribs=getContribs();
   contribs.push(contrib);
@@ -425,6 +526,7 @@ function submitContrib(){
 
   okEl.style.display="block";
   document.getElementById("contrib-amount").value="";
+  var dn=document.getElementById("contrib-donor-name");if(dn)dn.value="";
   document.getElementById("proof-preview").innerHTML="";
   _proofData="";
 
@@ -657,6 +759,109 @@ function renderMemberBar(){
   }
 }
 
+/* ── Donation / Soutien Communautaire ── */
+var _donorProofData="";
+function handleDonorProof(input){
+  var file=input.files[0];if(!file)return;
+  compressImage(file,700,700,0.7,function(data){
+    _donorProofData=data;
+    var prev=document.getElementById("donor-proof-preview");
+    if(prev)prev.innerHTML='<img src="'+_donorProofData+'"/>';
+  });
+}
+
+function renderDonationSection(){
+  var wallets=getWallets();
+  var display=document.getElementById("wallets-display");
+  if(!display)return;
+
+  if(!wallets.length){
+    display.innerHTML='<div class="no-wallets-msg">Les informations de paiement seront bientot disponibles. Revenez plus tard.</div>';
+  }else{
+    var h='<div class="wallet-grid">';
+    for(var i=0;i<wallets.length;i++){
+      var w=wallets[i];
+      h+='<div class="wallet-card">';
+      if(w.icon)h+='<img class="wallet-card-icon" src="'+w.icon+'" alt="'+w.name+'"/>';
+      else h+='<div class="wallet-card-icon-ph">&#128179;</div>';
+      h+='<div class="wallet-card-info">';
+      h+='<div class="wallet-card-name">'+w.name+'</div>';
+      h+='<div class="wallet-card-phone">'+w.phone+'</div>';
+      h+='</div>';
+      h+='<button class="wallet-card-copy" onclick="copyPhone(\''+w.phone.replace(/'/g,"\\'")+'\')" title="Copier le numero">Copier</button>';
+      h+='</div>';
+    }
+    h+='</div>';
+    display.innerHTML=h;
+  }
+
+  /* Populate fund dropdown */
+  var sel=document.getElementById("donor-fund");
+  if(sel){
+    var funds=getFunds();
+    var val=sel.value;
+    sel.innerHTML='<option value="">-- Choisir un fonds --</option>';
+    for(var j=0;j<funds.length;j++){
+      sel.innerHTML+='<option value="'+funds[j].id+'">'+funds[j].name+'</option>';
+    }
+    if(val)sel.value=val;
+  }
+}
+
+function copyPhone(phone){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(phone).then(function(){
+      if(typeof showToast==="function")showToast("Numero copie !");
+    });
+  }else{
+    var t=document.createElement("textarea");t.value=phone;document.body.appendChild(t);
+    t.select();document.execCommand("copy");document.body.removeChild(t);
+    if(typeof showToast==="function")showToast("Numero copie !");
+  }
+}
+
+function submitDonation(){
+  var name=document.getElementById("donor-name").value.trim();
+  var amount=parseInt(document.getElementById("donor-amount").value);
+  var fundId=document.getElementById("donor-fund").value;
+  var errEl=document.getElementById("donor-err");
+  var okEl=document.getElementById("donor-ok");
+  errEl.style.display="none";okEl.style.display="none";
+
+  if(!name){errEl.textContent="Veuillez entrer votre nom.";errEl.style.display="block";return;}
+  if(!amount||amount<1){errEl.textContent="Veuillez entrer un montant valide.";errEl.style.display="block";return;}
+  if(!fundId){errEl.textContent="Veuillez choisir un fonds.";errEl.style.display="block";return;}
+
+  var funds=getFunds();var fundName="";
+  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;break;}}
+
+  var contrib={
+    id:"d_"+Date.now(),
+    fundId:fundId,
+    fundName:fundName,
+    memberId:"donor",
+    memberName:name+" (Don)",
+    memberPhoto:"",
+    amount:amount,
+    proof:_donorProofData,
+    date:new Date().toLocaleDateString("fr-FR"),
+    status:"pending",
+    isDonation:true
+  };
+  var contribs=getContribs();
+  contribs.push(contrib);
+  saveContribs(contribs);
+
+  okEl.style.display="block";
+  document.getElementById("donor-name").value="";
+  document.getElementById("donor-amount").value="";
+  document.getElementById("donor-fund").value="";
+  document.getElementById("donor-proof-preview").innerHTML="";
+  _donorProofData="";
+
+  renderFunds();updateTotal();renderAllContribs();
+}
+
 /* ── INIT ── */
 (function(){
   setupEmojiPicker();
@@ -666,6 +871,7 @@ function renderMemberBar(){
   renderAllContribs();
   updateTotal();
   renderMembershipTrackers();
+  renderDonationSection();
 
   /* Show add-fund fab if admin */
   if(_isAdmin){
