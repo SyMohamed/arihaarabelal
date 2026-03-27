@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ari-Haara - Caisse Solidaire</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css?v=6"/>
+<style>
+/* Emoji picker */
+.emoji-picker{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;}
+.emoji-btn{background:rgba(13,74,71,.06);border:1px solid #e0dcd0;border-radius:6px;
+  width:38px;height:38px;font-size:1.3rem;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;}
+.emoji-btn:hover{background:rgba(13,74,71,.15);transform:scale(1.15);}
+.emoji-btn.selected{border-color:var(--teal);background:rgba(13,74,71,.18);box-shadow:0 0 0 2px rgba(13,74,71,.2);}
+
+/* Membership tracker */
+.membership-section{padding:3rem 2rem;}
+.membership-fund-title{font-family:"Cinzel",serif;font-size:1.15rem;color:var(--teal-dark);margin-bottom:.8rem;}
+.membership-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-top:1rem;margin-bottom:2.5rem;}
+.mem-track-card{background:var(--white);border-radius:6px;padding:1rem;text-align:center;
+  box-shadow:0 2px 12px rgba(13,74,71,.06);position:relative;overflow:hidden;}
+.mem-track-card.paid{border-bottom:3px solid var(--teal);}
+.mem-track-card.unpaid{border-bottom:3px solid #e0c080;opacity:.7;}
+.mem-track-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;
+  filter:grayscale(100%);margin:0 auto .6rem;display:block;}
+.mem-track-avatar-ph{width:56px;height:56px;border-radius:50%;
+  background:var(--teal-dark);color:var(--cream);display:flex;align-items:center;
+  justify-content:center;font-size:1.3rem;margin:0 auto .6rem;}
+.mem-track-name{font-family:"Cinzel",serif;font-size:.82rem;color:var(--teal-dark);margin-bottom:.3rem;}
+.mem-track-status{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;
+  border-radius:10px;display:inline-block;}
+.mem-track-status.paid{background:rgba(13,74,71,.1);color:var(--teal);}
+.mem-track-status.unpaid{background:rgba(201,168,76,.15);color:#a08030;}
+.mem-track-amount{font-size:.75rem;color:#888;margin-top:.3rem;}
+
+/* Member bar */
+.member-bar{background:linear-gradient(135deg,var(--teal-dark),var(--teal));padding:1rem 2rem;
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.member-bar-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;filter:grayscale(100%);
+  border:2px solid rgba(232,213,160,.4);flex-shrink:0;}
+.member-bar-avatar-ph{width:42px;height:42px;border-radius:50%;background:rgba(232,213,160,.15);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--cream);
+  border:2px solid rgba(232,213,160,.3);flex-shrink:0;}
+.member-bar-name{font-family:"Cinzel",serif;color:var(--cream);font-size:1rem;letter-spacing:.05em;}
+.member-bar-role{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-dark);}
+.member-bar-logout{background:none;border:1px solid rgba(232,213,160,.35);color:var(--cream);
+  padding:.3rem .8rem;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;border-radius:1px;font-family:"Lato",sans-serif;margin-left:auto;transition:all .3s;}
+.member-bar-logout:hover{background:rgba(232,213,160,.15);}
+
+/* Login prompt */
+.login-prompt{background:#f5f0e8;padding:1.5rem 2rem;text-align:center;}
+.login-prompt p{font-family:"Cormorant Garamond",serif;font-size:1rem;color:#666;margin-bottom:.8rem;}
+.login-prompt a{color:var(--teal);font-weight:600;text-decoration:underline;}
+
+/* Add fund button on page */
+.add-fund-btn{display:none;position:fixed;bottom:5rem;right:1.8rem;z-index:900;
+  background:var(--gold);color:var(--teal-dark);border:none;width:52px;height:52px;
+  border-radius:50%;font-size:1.8rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);
+  transition:all .3s;font-family:"Lato",sans-serif;line-height:1;}
+.add-fund-btn:hover{background:var(--cream);transform:scale(1.1);}
+
+/* Fund type select */
+.fg select{width:100%;border:1px solid #ddd;padding:.58rem .9rem;font-family:"Lato",sans-serif;
+  font-size:.9rem;border-radius:1px;background:#fafafa;transition:border-color .3s;}
+.fg select:focus{outline:none;border-color:var(--teal);}
+
+/* Proof upload area */
+.proof-upload-area{margin-top:.5rem;}
+.proof-preview{margin-top:.5rem;}
+.proof-preview img{max-width:120px;max-height:120px;object-fit:cover;border-radius:2px;border:1px solid #eee;}
+
+/* My contribs section */
+.my-contribs-section{padding:3rem 2rem;background:#f5f0e8;}
+.my-contribs-wrap{max-width:1080px;margin:0 auto;}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="main-nav">
+  <a class="nav-logo" href="index.html"><span class="nav-logo-text">Ari-Haara</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Accueil</a></li>
+    <li><a href="activites.html">Activites</a></li>
+    <li><a href="membres.html">Membres</a></li>
+    <li><a href="caisse.html" class="active">Caisse Solidaire</a></li>
+  </ul>
+  <a href="membres.html" class="btn-member-nav" id="member-nav-btn">&#128100; Connexion</a>
+  <button class="btn-admin" id="admin-nav-btn" onclick="openLoginOrPanel()">Admin</button>
+</nav>
+
+<!-- ── PAGE TOP ── -->
+<div class="page-top">
+
+  <!-- Member bar / login prompt -->
+  <div id="member-bar"></div>
+
+  <!-- ── HERO TOTAL ── -->
+  <div class="caisse-hero">
+    <div class="lbl center" style="color:var(--cream-dark)">Caisse Solidaire</div>
+    <div class="caisse-total" id="total-raised">0 MRU</div>
+    <div class="caisse-total-label">Total collecte</div>
+  </div>
+
+  <!-- ── FUNDS GRID ── -->
+  <!-- Cotisations Membres -->
+  <div id="membership-funds-section" style="display:none">
+    <div style="max-width:1080px;margin:0 auto;padding:2.5rem 2rem 0">
+      <p class="lbl" style="color:var(--teal)">&#128101; Adhesions</p>
+      <h2 style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--teal-dark);margin-bottom:.3rem">Cotisations Membres</h2>
+      <p style="font-family:'Cormorant Garamond',serif;color:#888;font-size:.95rem;margin-bottom:1.5rem">Cotisations annuelles et adhesions des membres</p>
+    </div>
+    <div class="fund-grid" id="membership-funds-grid"></div>
+  </div>
+
+  <!-- Fonds Collectifs -->
+  <div id="regular-funds-section" style="display:none">
+    <div style="max-width:1080px;margin:0 auto;padding:2.5rem 2rem 0">
+      <p class="lbl" style="color:var(--gold)">&#128176; Cagnotte</p>
+      <h2 style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--teal-dark);margin-bottom:.3rem">Fonds Collectifs</h2>
+      <p style="font-family:'Cormorant Garamond',serif;color:#888;font-size:.95rem;margin-bottom:1.5rem">Projets communautaires et collectes solidaires</p>
+    </div>
+    <div class="fund-grid" id="regular-funds-grid"></div>
+  </div>
+
+  <div id="no-funds-msg" style="display:none;text-align:center;padding:4rem 2rem;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#aaa;">
+    Aucun fonds pour le moment.
+  </div>
+
+  <!-- ── MEMBERSHIP TRACKERS ── -->
+  <div id="membership-trackers"></div>
+
+  <!-- ── MY CONTRIBUTIONS ── -->
+  <div id="my-contribs-section" style="display:none;">
+    <div class="my-contribs-section">
+      <div class="my-contribs-wrap">
+        <div class="lbl">Mes Contributions</div>
+        <div class="contrib-title">Historique de vos contributions</div>
+        <div class="contrib-list" id="my-contribs-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALL CONTRIBUTIONS ── -->
+  <div class="contrib-section">
+    <div class="contrib-wrap">
+      <div class="lbl">Contributions Recentes</div>
+      <div class="contrib-title">Contributions approuvees</div>
+      <div class="contrib-list" id="all-contribs-list"></div>
+    </div>
+  </div>
+
+</div><!-- /page-top -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="ft-name">Ari-Haara Emergent</div>
+  <div class="ft-sub">Village d'Afrique &middot; Unis pour l'Avenir</div>
+</footer>
+
+<!-- ── ADMIN FAB ── -->
+<button id="admin-fab" onclick="openAdminPanel()">&#9881; Admin</button>
+
+<!-- ── ADD FUND QUICK BTN ── -->
+<button class="add-fund-btn" id="add-fund-fab" onclick="openFundForm()" title="Ajouter un fonds">+</button>
+
+<!-- ══════════════════════════════════════════════════════════
+     OVERLAYS
+     ══════════════════════════════════════════════════════════ -->
+
+<!-- Admin Login -->
+<div class="overlay" id="ov-admin-login">
+  <div class="modal">
+    <div class="mhd">
+      <h3>Connexion Admin</h3>
+      <button class="mclose" onclick="closeOv('ov-admin-login')">&times;</button>
+    </div>
+    <div class="mbd">
+      <div class="fg">
+        <label>Mot de passe</label>
+        <input type="password" id="pw-input" onkeydown="if(event.key==='Enter')doAdminLogin()"/>
+      </div>
+      <div class="ferr" id="pw-err">Mot de passe incorrect.</div>
+      <button class="btn-p full" onclick="doAdminLogin()">Se Connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="overlay" id="ov-admin">
+  <div class="modal wide">
+    <div class="mhd">
+      <h3>Panneau Admin</h3>
+      <button class="mclose" onclick="closeOv('ov-admin')">&times;</button>
+    </div>
+    <div class="mbd">
+      <div class="tabs">
+        <button class="tab active" onclick="swTab(0)">Fonds</button>
+        <button class="tab" onclick="swTab(1)">Contributions</button>
+        <button class="tab" onclick="swTab(2)">Membres</button>
+        <button class="tab" onclick="swTab(3)">Donnees</button>
+      </div>
+
+      <!-- Tab 0: Fonds -->
+      <div class="tpanel active" id="tp-0">
+        <button class="btn-add" onclick="openFundForm()">+ Nouveau Fonds</button>
+        <div class="alist" id="funds-alist"></div>
+      </div>
+
+      <!-- Tab 1: Contributions -->
+      <div class="tpanel" id="tp-1">
+        <button class="btn-add" onclick="exportContribsCSV()">&#8681; Exporter CSV</button>
+        <div class="alist" id="contribs-alist"></div>
+      </div>
+
+      <!-- Tab 2: Membres -->
+      <div class="tpanel" id="tp-2">
+        <button class="btn-add" onclick="openMemberForm()">+ Ajouter un membre</button>
+        <div class="alist" id="members-alist"></div>
+      </div>
+
+      <!-- Tab 3: Donnees -->
+      <div class="tpanel" id="tp-3">
+        <div class="notice" style="margin-bottom:1rem">Exportez vos donnees pour les importer sur un autre appareil.</div>
+        <button class="btn-p full" onclick="exportAllData()" style="margin-bottom:.6rem;background:var(--gold);color:var(--black)">&#128190; Exporter toutes les donnees</button>
+        <button class="btn-p full" onclick="importAllData()" style="margin-bottom:.6rem">&#128194; Importer des donnees</button>
+        <button class="btn-p full" onclick="exportContribsCSV()" style="margin-bottom:.6rem;background:var(--teal-light);color:var(--cream)">&#128196; Exporter contributions (CSV)</button>
+      </div>
+
+      <div style="margin-top:1.2rem;text-align:right;">
+        <button class="btn-p danger" onclick="doAdminLogout()">Deconnexion</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fund Form -->
+<div class="overlay" id="ov-fund">
+  <div class="modal">
+    <div class="mhd">
+      <h3>Nouveau Fonds</h3>
+      <button class="mclose" onclick="closeOv('ov-fund')">&times;</button>
+    </div>
+    <div class="mbd">
+      <div class="fg">
+        <label>Icone</label>
+        <input type="text" id="fund-icon" placeholder="Cliquez ci-dessous ou tapez un emoji" readonly/>
+        <div class="emoji-picker" id="emoji-picker"></div>
+      </div>
+      <div class="fg">
+        <label>Nom du fonds</label>
+        <input type="text" id="fund-name" placeholder="Ex: Construction Ecole"/>
+      </div>
+      <div class="fg">
+        <label>Description</label>
+        <textarea id="fund-desc" placeholder="Decrivez l'objectif de ce fonds..."></textarea>
+      </div>
+      <div class="fg">
+        <label>Objectif (MRU)</label>
+        <input type="number" id="fund-goal" placeholder="Ex: 50000" min="0"/>
+      </div>
+      <div class="fg">
+        <label>Type</label>
+        <select id="fund-type">
+          <option value="regular">Regulier (collecte libre)</option>
+          <option value="membership">Adhesion (cotisation membre)</option>
+        </select>
+      </div>
+      <button class="btn-p full" onclick="saveFund()">Creer le Fonds</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contribution Modal -->
+<div class="overlay" id="ov-contrib">
+  <div class="modal">
+    <div class="mhd">
+      <h3 id="contrib-modal-title">Contribuer</h3>
+      <button class="mclose" onclick="closeOv('ov-contrib')">&times;</button>
+    </div>
+    <div class="mbd">
+      <input type="hidden" id="contrib-fund-id"/>
+      <p id="contrib-fund-desc" style="font-size:.88rem;color:#666;margin-bottom:1.2rem;line-height:1.5;"></p>
+      <div class="fg">
+        <label>Montant (MRU)</label>
+        <input type="number" id="contrib-amount" placeholder="Ex: 500" min="1"/>
+      </div>
+      <div class="fg">
+        <label>Preuve de paiement (optionnel)</label>
+        <div class="proof-upload-area">
+          <label class="upload-btn">
+            <span>&#128247; Choisir une image</span>
+            <input type="file" accept="image/*" style="display:none" onchange="handleProofUpload(this)"/>
+          </label>
+          <div class="proof-preview" id="proof-preview"></div>
+        </div>
+      </div>
+      <div class="ferr" id="contrib-err"></div>
+      <div class="fok" id="contrib-ok">Contribution envoyee! En attente d'approbation.</div>
+      <button class="btn-p full" onclick="submitContrib()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Proof Viewer -->
+<!-- ADD MEMBER FORM -->
+<div class="overlay" id="ov-add-member">
+  <div class="modal">
+    <div class="mhd"><h3>Ajouter un Membre</h3><button class="mclose" onclick="closeOv('ov-add-member')">&#215;</button></div>
+    <div class="mbd">
+      <div class="fg"><label>Nom complet</label><input type="text" id="adm-mem-name" placeholder="Prenom Nom"/></div>
+      <div class="fg"><label>Mot de passe</label><input type="password" id="adm-mem-password" placeholder="Mot de passe du membre"/></div>
+      <div class="fg"><label>Role / Profession</label><input type="text" id="adm-mem-role" placeholder="ex: Eleveur, Enseignant..."/></div>
+      <div class="fg"><label>Photo (optionnel)</label>
+        <label class="upload-btn">&#128247; Choisir une photo<input type="file" accept="image/*" style="display:none" onchange="handleAdminMemberPhoto(this)"/></label>
+        <img id="adm-mem-photo-prev" src="" style="display:none;width:70px;height:70px;object-fit:cover;border-radius:50%;filter:grayscale(100%);margin-top:.5rem"/>
+      </div>
+      <button class="btn-p full" onclick="saveAdminMember()">Ajouter le membre</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ov-proof">
+  <div class="modal" style="background:transparent;box-shadow:none;max-width:90vw;align-items:center;">
+    <div style="text-align:right;padding:.5rem;">
+      <button class="mclose" onclick="closeOv('ov-proof')" style="color:var(--cream);font-size:2rem;background:none;border:none;cursor:pointer;">&times;</button>
+    </div>
+    <img id="proof-img" style="max-width:100%;max-height:80vh;object-fit:contain;border-radius:2px;" src="" alt="Preuve"/>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS
+     ══════════════════════════════════════════════════════════ -->
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCY1LnnXNjUjKhWY6ck5X-lrcLj0mMvdvE",
+  authDomain:"arihaara.firebaseapp.com",
+  projectId:"arihaara",
+  storageBucket:"arihaara.firebasestorage.app",
+  messagingSenderId:"1034656505245",
+  appId:"1:1034656505245:web:eca4018469b3ae3021a374"
+});
+</script>
+<script src="data.js?v=6"></script>
+<script>
+(function(){
+  var btn=document.getElementById("member-nav-btn");
+  if(!btn)return;
+  var m=curMember();
+  if(m){btn.textContent=m.name;btn.href="membres.html";}
+})();
+</script>
+<script>
+/* ── Proof upload handler ── */
+var _proofData="";
+function handleProofUpload(input){
+  var file=input.files[0];if(!file)return;
+  compressImage(file,400,400,0.5,function(data){
+    _proofData=data;
+    var prev=document.getElementById("proof-preview");
+    if(prev)prev.innerHTML='<img src="'+_proofData+'"/>';
+  });
+}
+
+/* ── Open contribution modal ── */
+function openContribModal(fundId){
+  var m=curMember();
+  if(!m){alert("Veuillez vous connecter en tant que membre pour contribuer.");return;}
+  if(m.status!=="approved"){alert("Votre compte membre est en attente d'approbation.");return;}
+  var funds=getFunds();
+  var fund=null;
+  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fund=funds[i];break;}}
+  if(!fund)return;
+  document.getElementById("contrib-fund-id").value=fund.id;
+  document.getElementById("contrib-modal-title").textContent="Contribuer: "+fund.name;
+  document.getElementById("contrib-fund-desc").textContent=fund.desc||"";
+  document.getElementById("contrib-amount").value="";
+  document.getElementById("contrib-err").style.display="none";
+  document.getElementById("contrib-ok").style.display="none";
+  document.getElementById("proof-preview").innerHTML="";
+  _proofData="";
+  openOv("ov-contrib");
+}
+
+/* ── Submit contribution ── */
+function submitContrib(){
+  var fundId=document.getElementById("contrib-fund-id").value;
+  var amount=parseInt(document.getElementById("contrib-amount").value);
+  var errEl=document.getElementById("contrib-err");
+  var okEl=document.getElementById("contrib-ok");
+  errEl.style.display="none";okEl.style.display="none";
+
+  if(!amount||amount<1){
+    errEl.textContent="Veuillez entrer un montant valide.";
+    errEl.style.display="block";return;
+  }
+  var m=curMember();if(!m){errEl.textContent="Non connecte.";errEl.style.display="block";return;}
+
+  var funds=getFunds();var fundName="";
+  for(var i=0;i<funds.length;i++){if(funds[i].id===fundId){fundName=funds[i].name;break;}}
+
+  var contrib={
+    id:"c_"+Date.now(),
+    fundId:fundId,
+    fundName:fundName,
+    memberId:m.id,
+    memberName:m.name,
+    memberPhoto:m.photo||"",
+    amount:amount,
+    proof:_proofData,
+    date:new Date().toLocaleDateString("fr-FR"),
+    status:"pending"
+  };
+  var contribs=getContribs();
+  contribs.push(contrib);
+  saveContribs(contribs);
+
+  okEl.style.display="block";
+  document.getElementById("contrib-amount").value="";
+  document.getElementById("proof-preview").innerHTML="";
+  _proofData="";
+
+  renderMyContribs();
+  renderFunds();
+  updateTotal();
+}
+
+/* ── Build a fund card HTML ── */
+function buildFundCard(f,contribs){
+  var raised=0;var count=0;
+  for(var j=0;j<contribs.length;j++){
+    if(contribs[j].fundId===f.id){raised+=contribs[j].amount;count++;}
+  }
+  var pct=f.goal>0?Math.min(100,Math.round(raised/f.goal*100)):0;
+  var h='<div class="fund-card" onclick="openContribModal(\''+f.id+'\')">';
+  h+='<div class="fund-card-top">';
+  h+='<div class="fund-icon">'+(f.icon||"💰")+'</div>';
+  h+='<div class="fund-name">'+f.name+'</div>';
+  h+='<div class="fund-desc">'+(f.desc||"")+'</div>';
+  h+='<div class="fund-stats">';
+  h+='<div class="fund-raised">'+raised.toLocaleString("fr-FR")+' MRU</div>';
+  if(f.goal>0)h+='<div class="fund-goal">Objectif: '+f.goal.toLocaleString("fr-FR")+' MRU</div>';
+  h+='</div>';
+  if(f.goal>0){h+='<div class="fund-bar-wrap"><div class="fund-bar" style="width:'+pct+'%"></div></div>';}
+  h+='</div>';
+  h+='<div class="fund-card-bottom">';
+  h+='<div class="fund-contributors">'+count+' contribution'+(count!==1?"s":"")+'</div>';
+  h+='<button class="fund-btn" onclick="event.stopPropagation();openContribModal(\''+f.id+'\')">Contribuer</button>';
+  h+='</div></div>';
+  return h;
+}
+
+/* ── Render funds into two sections ── */
+function renderFunds(){
+  var funds=getFunds();
+  var contribs=getContribs().filter(function(c){return c.status==="approved";});
+  var memFunds=[];var regFunds=[];
+  for(var i=0;i<funds.length;i++){
+    if(funds[i].type==="membership")memFunds.push(funds[i]);
+    else regFunds.push(funds[i]);
+  }
+
+  var memSec=document.getElementById("membership-funds-section");
+  var regSec=document.getElementById("regular-funds-section");
+  var memGrid=document.getElementById("membership-funds-grid");
+  var regGrid=document.getElementById("regular-funds-grid");
+  var noMsg=document.getElementById("no-funds-msg");
+
+  if(!funds.length){
+    if(memSec)memSec.style.display="none";
+    if(regSec)regSec.style.display="none";
+    if(noMsg)noMsg.style.display="block";
+    renderMembershipTrackers();
+    return;
+  }
+  if(noMsg)noMsg.style.display="none";
+
+  /* Cotisations Membres */
+  if(memFunds.length&&memSec&&memGrid){
+    memSec.style.display="block";
+    var mh="";
+    for(var mi=0;mi<memFunds.length;mi++)mh+=buildFundCard(memFunds[mi],contribs);
+    memGrid.innerHTML=mh;
+  } else if(memSec){memSec.style.display="none";}
+
+  /* Fonds Collectifs */
+  if(regFunds.length&&regSec&&regGrid){
+    regSec.style.display="block";
+    var rh="";
+    for(var ri=0;ri<regFunds.length;ri++)rh+=buildFundCard(regFunds[ri],contribs);
+    regGrid.innerHTML=rh;
+  } else if(regSec){regSec.style.display="none";}
+
+  renderMembershipTrackers();
+}
+
+/* ── Update total raised ── */
+function updateTotal(){
+  var contribs=getContribs().filter(function(c){return c.status==="approved";});
+  var total=0;
+  for(var i=0;i<contribs.length;i++)total+=contribs[i].amount;
+  var el=document.getElementById("total-raised");
+  if(el)el.textContent=total.toLocaleString("fr-FR")+" MRU";
+}
+
+/* ── Render my contributions ── */
+function renderMyContribs(){
+  var m=curMember();
+  var section=document.getElementById("my-contribs-section");
+  var list=document.getElementById("my-contribs-list");
+  if(!section||!list)return;
+  if(!m){section.style.display="none";return;}
+
+  var contribs=getContribs().filter(function(c){return c.memberId===m.id;});
+  if(!contribs.length){section.style.display="none";return;}
+
+  section.style.display="block";
+  var h="";
+  for(var i=contribs.length-1;i>=0;i--){
+    var c=contribs[i];
+    h+='<div class="contrib-item">';
+    h+='<div class="contrib-info">';
+    h+='<div class="contrib-name">'+c.fundName+'</div>';
+    h+='<div class="contrib-meta">'+c.date+'</div></div>';
+    h+='<div class="contrib-amount">'+c.amount.toLocaleString("fr-FR")+' MRU</div>';
+    h+='<span class="contrib-status '+c.status+'">'+
+      (c.status==="approved"?"Approuvee":"En attente")+'</span>';
+    if(c.proof)h+='<img class="proof-thumb" src="'+c.proof+'" onclick="showProof(\''+c.id+'\')" title="Voir preuve"/>';
+    h+='</div>';
+  }
+  list.innerHTML=h;
+}
+
+/* ── Render all approved contributions ── */
+function renderAllContribs(){
+  var el=document.getElementById("all-contribs-list");if(!el)return;
+  var contribs=getContribs().filter(function(c){return c.status==="approved";});
+  if(!contribs.length){
+    el.innerHTML='<div style="text-align:center;padding:2rem;font-family:\'Cormorant Garamond\',serif;color:#aaa;">Aucune contribution approuvee pour le moment.</div>';
+    return;
+  }
+  var h="";
+  for(var i=contribs.length-1;i>=0;i--){
+    var c=contribs[i];
+    h+='<div class="contrib-item">';
+    if(c.memberPhoto){
+      h+='<img class="contrib-avatar" src="'+c.memberPhoto+'" onerror="this.style.display=\'none\'"/>';
+    }else{
+      h+='<div class="contrib-avatar-ph">'+(c.memberName?c.memberName[0]:"?")+'</div>';
+    }
+    h+='<div class="contrib-info">';
+    h+='<div class="contrib-name">'+c.memberName+'</div>';
+    h+='<div class="contrib-meta">'+c.fundName+' &bull; '+c.date+'</div></div>';
+    h+='<div class="contrib-amount">'+c.amount.toLocaleString("fr-FR")+' MRU</div>';
+    if(c.proof)h+='<img class="proof-thumb" src="'+c.proof+'" onclick="showProof(\''+c.id+'\')" title="Voir preuve"/>';
+    h+='</div>';
+  }
+  el.innerHTML=h;
+}
+
+/* ── Render membership trackers ── */
+function renderMembershipTrackers(){
+  var wrap=document.getElementById("membership-trackers");if(!wrap)return;
+  var funds=getFunds().filter(function(f){return f.type==="membership";});
+  if(!funds.length){wrap.innerHTML="";return;}
+
+  var members=getMembers().filter(function(m){return m.status==="approved";});
+  var contribs=getContribs().filter(function(c){return c.status==="approved";});
+
+  var h='<div class="membership-section"><div class="wrap">';
+  h+='<div class="lbl">Suivi des Adhesions</div>';
+
+  for(var fi=0;fi<funds.length;fi++){
+    var fund=funds[fi];
+    h+='<div class="membership-fund-title">'+(fund.icon||"")+" "+fund.name+'</div>';
+
+    // Build set of members who paid this fund
+    var paidMap={};
+    for(var ci=0;ci<contribs.length;ci++){
+      if(contribs[ci].fundId===fund.id){
+        paidMap[contribs[ci].memberId]=(paidMap[contribs[ci].memberId]||0)+contribs[ci].amount;
+      }
+    }
+
+    h+='<div class="membership-grid">';
+    for(var mi=0;mi<members.length;mi++){
+      var m=members[mi];
+      var paid=paidMap[m.id]||0;
+      var isPaid=paid>0;
+      h+='<div class="mem-track-card '+(isPaid?"paid":"unpaid")+'">';
+      if(m.photo){
+        h+='<img class="mem-track-avatar" src="'+m.photo+'" onerror="this.style.display=\'none\'"/>';
+      }else{
+        h+='<div class="mem-track-avatar-ph">'+m.name[0]+'</div>';
+      }
+      h+='<div class="mem-track-name">'+m.name+'</div>';
+      h+='<span class="mem-track-status '+(isPaid?"paid":"unpaid")+'">'+(isPaid?"Paye":"Non paye")+'</span>';
+      if(isPaid)h+='<div class="mem-track-amount">'+paid.toLocaleString("fr-FR")+' MRU</div>';
+      h+='</div>';
+    }
+    if(!members.length){
+      h+='<div style="grid-column:1/-1;text-align:center;padding:1.5rem;color:#aaa;font-size:.85rem;">Aucun membre approuve.</div>';
+    }
+    h+='</div>';
+  }
+  h+='</div></div>';
+  wrap.innerHTML=h;
+}
+
+/* ── Show proof (page-level, calls data.js showProof for admin, also works standalone) ── */
+/* Note: showProof is already defined in data.js and works globally */
+
+/* ── Emoji picker setup ── */
+function setupEmojiPicker(){
+  var emojis=["🏫","💰","🏥","🌳","💪","🕌","🚌","🏠","📚","💧","🤲","⭐","❤️","🤝","🌾","🎓"];
+  var picker=document.getElementById("emoji-picker");if(!picker)return;
+  var h="";
+  for(var i=0;i<emojis.length;i++){
+    h+='<button type="button" class="emoji-btn" data-emoji="'+emojis[i]+'" onclick="pickEmoji(this)">'+emojis[i]+'</button>';
+  }
+  picker.innerHTML=h;
+}
+function pickEmoji(btn){
+  var emoji=btn.getAttribute("data-emoji");
+  document.getElementById("fund-icon").value=emoji;
+  var all=document.querySelectorAll(".emoji-btn");
+  for(var i=0;i<all.length;i++)all[i].classList.remove("selected");
+  btn.classList.add("selected");
+}
+
+/* ── Member bar rendering ── */
+function renderMemberBar(){
+  var bar=document.getElementById("member-bar");if(!bar)return;
+  var m=curMember();
+  if(m){
+    var h='<div class="member-bar">';
+    if(m.photo){
+      h+='<img class="member-bar-avatar" src="'+m.photo+'" onerror="this.style.display=\'none\'"/>';
+    }else{
+      h+='<div class="member-bar-avatar-ph">'+m.name[0]+'</div>';
+    }
+    h+='<div><div class="member-bar-name">'+m.name+'</div>';
+    h+='<div class="member-bar-role">'+(m.role||"Membre")+'</div></div>';
+    h+='<button class="member-bar-logout" onclick="logout();location.reload();">Deconnexion</button>';
+    h+='</div>';
+    bar.innerHTML=h;
+  }else{
+    bar.innerHTML='<div class="login-prompt"><p>Connectez-vous en tant que membre pour contribuer. <a href="membres.html">S\'inscrire / Se connecter</a></p></div>';
+  }
+}
+
+/* ── INIT ── */
+(function(){
+  setupEmojiPicker();
+  renderMemberBar();
+  renderFunds();
+  renderMyContribs();
+  renderAllContribs();
+  updateTotal();
+  renderMembershipTrackers();
+
+  /* Show add-fund fab if admin */
+  if(_isAdmin){
+    var fab=document.getElementById("admin-fab");if(fab)fab.style.display="block";
+    var addFab=document.getElementById("add-fund-fab");if(addFab)addFab.style.display="block";
+    var btn=document.getElementById("admin-nav-btn");if(btn)btn.classList.add("logged");
+  }
+
+  /* Enter key listener for admin login */
+  document.addEventListener("keydown",function(e){
+    var ov=document.getElementById("ov-admin-login");
+    if(ov&&ov.classList.contains("open")&&e.key==="Enter"){
+      doAdminLogin();
+    }
+  });
+})();
+window.addEventListener("scroll",function(){var b=document.getElementById("back-to-top");if(b)b.classList.toggle("visible",window.scrollY>300);});
+</script>
+<button class="back-to-top" id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+</body>
+</html>
